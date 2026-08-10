@@ -69,7 +69,7 @@ export default function bookView({ id }) {
         </div>
       </div>
 
-      <div class="tabs">
+      <div class="tabs-line">
         <button class="tab ${tab === 'overview' ? 'is-active' : ''}" data-tab="overview" type="button">개요</button>
         <button class="tab ${tab === 'notes' ? 'is-active' : ''}" data-tab="notes" type="button">문장·메모 ${notes.length || ''}</button>
         <button class="tab ${tab === 'sessions' ? 'is-active' : ''}" data-tab="sessions" type="button">독서 기록 ${sessions.length || ''}</button>

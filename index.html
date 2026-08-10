@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="description" content="책갈피 — 읽는 시간을 기록하는 나만의 독서 서재" />
-<meta name="theme-color" content="#1b1a17" />
+<meta name="theme-color" content="#f4f3f9" />
 <title>책갈피 · 독서기록</title>
 <link rel="manifest" href="./manifest.webmanifest" />
 <link rel="icon" href="./assets/icon.svg" type="image/svg+xml" />
@@ -22,30 +22,22 @@
       <input id="globalSearch" type="search" placeholder="내 서재에서 검색  (/)" autocomplete="off" />
     </div>
     <div class="topbar__actions">
+      <button id="btnTheme" class="btn btn--icon btn--soft" type="button" title="테마 전환 (T)" aria-label="테마 전환">◐</button>
       <button id="btnAddBook" class="btn btn--primary" type="button">
         <span class="i">＋</span><span class="lbl">책 추가</span>
       </button>
-      <button id="btnTheme" class="btn btn--icon" type="button" title="테마 전환 (T)">◐</button>
     </div>
   </header>
 
-  <nav class="sidenav" id="sidenav">
-    <a class="sidenav__item" href="#/home" data-route="home"><span class="ic">🏠</span><span>홈</span></a>
-    <a class="sidenav__item" href="#/library" data-route="library"><span class="ic">📚</span><span>서재</span></a>
-    <a class="sidenav__item" href="#/timeline" data-route="timeline"><span class="ic">🕘</span><span>기록</span></a>
-    <a class="sidenav__item" href="#/notes" data-route="notes"><span class="ic">✍️</span><span>문장·실천</span></a>
-    <a class="sidenav__item" href="#/stats" data-route="stats"><span class="ic">📈</span><span>통계</span></a>
-    <a class="sidenav__item" href="#/settings" data-route="settings"><span class="ic">⚙️</span><span>설정</span></a>
-  </nav>
-
   <main id="view" class="view" tabindex="-1"></main>
 
-  <nav class="tabbar">
-    <a class="tabbar__item" href="#/home" data-route="home"><span class="ic">🏠</span><span>홈</span></a>
-    <a class="tabbar__item" href="#/library" data-route="library"><span class="ic">📚</span><span>서재</span></a>
-    <a class="tabbar__item tabbar__add" href="#/add" data-route="add"><span class="ic">＋</span></a>
-    <a class="tabbar__item" href="#/notes" data-route="notes"><span class="ic">✍️</span><span>문장</span></a>
-    <a class="tabbar__item" href="#/stats" data-route="stats"><span class="ic">📈</span><span>통계</span></a>
+  <nav class="tabs" aria-label="주요 화면">
+    <a class="tb" href="#/home" data-route="home"><b>⌂</b><span>홈</span></a>
+    <a class="tb" href="#/library" data-route="library"><b>▦</b><span>서재</span></a>
+    <a class="tb" href="#/timeline" data-route="timeline"><b>◷</b><span>기록</span></a>
+    <a class="tb tb--add" href="#/add" data-route="add" aria-label="책 추가"><b>＋</b></a>
+    <a class="tb" href="#/notes" data-route="notes"><b>❞</b><span>문장</span></a>
+    <a class="tb" href="#/stats" data-route="stats"><b>◫</b><span>통계</span></a>
   </nav>
 
   <div id="timerDock" class="timer-dock" hidden></div>

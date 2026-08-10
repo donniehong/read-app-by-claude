@@ -45,7 +45,7 @@ export function rankList(rows, { valueFmt = (v) => v, max: maxN = 6 } = {}) {
     </div>`).join('');
 }
 
-const DONUT_COLORS = ['#a4552f', '#3f7d55', '#b07d1f', '#4a6fa5', '#8d5a9e', '#b2413a', '#5f8a8b', '#9c7b4f'];
+const DONUT_COLORS = ['#5b52ff', '#14c8a0', '#ffb020', '#ff6b5e', '#a86bff', '#3aa0ff', '#7e8bb5', '#e15fa6'];
 
 /** 도넛 차트 + 범례 */
 export function donutChart(data, { size = 150 } = {}) {

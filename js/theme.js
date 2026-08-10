@@ -7,7 +7,7 @@ function paint() {
   const dark = mode === 'dark' || (mode === 'auto' && media.matches);
   document.documentElement.dataset.theme = dark ? 'dark' : 'light';
   const meta = document.querySelector('meta[name="theme-color"]');
-  if (meta) meta.setAttribute('content', dark ? '#16150f' : '#f7f4ee');
+  if (meta) meta.setAttribute('content', dark ? '#111020' : '#f4f3f9');
 }
 
 export function applyTheme(next) {
