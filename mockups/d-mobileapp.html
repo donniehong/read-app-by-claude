@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>시안 D — 요즘 모바일 앱</title>
+<style>
+:root{
+  --bg:#f4f3f9; --card:#ffffff; --ink:#171528; --dim:#6b6885; --faint:#a09dba;
+  --brand:#5b52ff; --brand-soft:#eceafe; --brand-deep:#3a32c9;
+  --mint:#14c8a0; --mint-soft:#e0f8f2;
+  --coral:#ff6b5e; --coral-soft:#ffeae7;
+  --amber:#ffb020; --amber-soft:#fff3dc;
+  --r:24px; --r2:18px;
+  --sans:"Pretendard",-apple-system,"Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+.mono{font-variant-numeric:tabular-nums}
+
+.page{max-width:1080px;margin:0 auto;padding:22px 20px 110px}
+
+/* 헤더 */
+.hd{display:flex;align-items:center;gap:12px;margin-bottom:22px}
+.hd .hi{font-size:24px;font-weight:800;letter-spacing:-.03em}
+.hd .hi small{display:block;font-size:13px;font-weight:600;color:var(--dim);letter-spacing:0;margin-top:2px}
+.av{margin-left:auto;width:42px;height:42px;border-radius:15px;background:var(--brand-soft);display:grid;place-items:center;font-size:19px}
+
+/* 히어로 */
+.hero{background:linear-gradient(135deg,var(--brand),#8a6bff 60%,#a86bff);
+  border-radius:28px;padding:22px;color:#fff;margin-bottom:14px;position:relative;overflow:hidden}
+.hero::after{content:"";position:absolute;right:-40px;top:-50px;width:190px;height:190px;border-radius:50%;background:rgba(255,255,255,.13)}
+.hero::before{content:"";position:absolute;right:38px;bottom:-64px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.10)}
+.hero .lb{font-size:12.5px;font-weight:800;opacity:.9;letter-spacing:.04em}
+.hero .big{font-size:34px;font-weight:800;letter-spacing:-.04em;margin:6px 0 2px}
+.hero .sub{font-size:13.5px;opacity:.92}
+.hero .track{height:9px;border-radius:9px;background:rgba(255,255,255,.28);margin-top:16px;overflow:hidden}
+.hero .track i{display:block;height:100%;background:#fff;border-radius:9px}
+.hero .foot{display:flex;margin-top:10px;font-size:12.5px;font-weight:700;opacity:.95}
+
+/* 퀵 액션 */
+.quick{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px}
+.qa{background:var(--card);border-radius:var(--r2);padding:14px 10px;text-align:center;border:0;
+  box-shadow:0 2px 10px rgba(30,20,90,.05);cursor:pointer;font-family:inherit}
+.qa .ic{width:44px;height:44px;border-radius:14px;display:grid;place-items:center;margin:0 auto 8px;font-size:20px}
+.qa .lb{font-size:12px;font-weight:700;color:var(--dim)}
+.i1{background:var(--brand-soft)} .i2{background:var(--mint-soft)}
+.i3{background:var(--coral-soft)} .i4{background:var(--amber-soft)}
+
+h2.sec{font-size:18px;font-weight:800;letter-spacing:-.02em;margin:0 0 12px;display:flex;align-items:center}
+h2.sec a{margin-left:auto;font-size:13px;font-weight:700;color:var(--brand);text-decoration:none}
+
+/* 이어읽기 큰 카드 */
+.cont{background:var(--card);border-radius:var(--r);padding:16px;display:flex;gap:16px;
+  box-shadow:0 4px 20px rgba(30,20,90,.06);margin-bottom:14px;align-items:center}
+.cover{width:84px;height:124px;border-radius:14px;flex:0 0 auto;position:relative;overflow:hidden;
+  background:linear-gradient(150deg,#8f86ff,#5b52ff);box-shadow:0 8px 18px rgba(91,82,255,.32);
+  color:#fff;font-size:12px;font-weight:800;padding:10px;display:flex;align-items:flex-end;line-height:1.3}
+.cont .bd{flex:1;min-width:0}
+.cont .t{font-size:18px;font-weight:800;letter-spacing:-.02em}
+.cont .a{font-size:13px;color:var(--dim);margin-bottom:12px}
+.track2{height:10px;border-radius:10px;background:#eeecf7;overflow:hidden}
+.track2 i{display:block;height:100%;border-radius:10px;background:linear-gradient(90deg,var(--brand),#9b6bff)}
+.meta{display:flex;gap:8px;align-items:center;margin-top:8px;font-size:12.5px;color:var(--dim);font-weight:600}
+.pill{background:var(--mint-soft);color:#0a8f72;border-radius:999px;padding:3px 10px;font-size:11.5px;font-weight:800}
+.cta{margin-top:14px;display:flex;gap:8px}
+.bt{border:0;border-radius:14px;padding:11px 18px;font-weight:800;font-size:14px;cursor:pointer;font-family:inherit}
+.bt.p{background:var(--brand);color:#fff;box-shadow:0 6px 16px rgba(91,82,255,.3)}
+.bt.g{background:#f1f0f8;color:var(--dim)}
+
+/* 작은 진행 카드 */
+.mini{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:22px}
+.mc{background:var(--card);border-radius:var(--r2);padding:14px;display:flex;gap:12px;align-items:center;
+  box-shadow:0 2px 10px rgba(30,20,90,.05)}
+.mc .cv{width:44px;height:64px;border-radius:9px;flex:0 0 auto;background:linear-gradient(150deg,#ffc46b,#ff8f4d);
+  color:#fff;font-size:8.5px;font-weight:800;padding:5px;display:flex;align-items:flex-end;line-height:1.25}
+.mc .cv.b{background:linear-gradient(150deg,#6fd6c4,#14a88c)}
+.mc .t{font-size:14px;font-weight:800;letter-spacing:-.01em}
+.mc .pc{font-size:12px;color:var(--faint);font-weight:700;margin-top:2px}
+.mc .tk{height:6px;border-radius:6px;background:#f0eff7;margin-top:7px;overflow:hidden}
+.mc .tk i{display:block;height:100%;border-radius:6px;background:var(--amber)}
+.mc .tk i.b{background:var(--mint)}
+
+/* 문장 카드 */
+.qcard{background:linear-gradient(140deg,#fff,#f7f5ff);border-radius:var(--r);padding:20px;
+  box-shadow:0 4px 20px rgba(30,20,90,.06);margin-bottom:14px;border:1px solid #efedfa}
+.qcard .mark{font-size:34px;color:var(--brand);line-height:.7;font-weight:800}
+.qcard p{margin:8px 0 14px;font-size:17px;line-height:1.65;font-weight:600;letter-spacing:-.01em}
+.qcard .src{font-size:12.5px;color:var(--faint);font-weight:700}
+.qcard .row{display:flex;gap:8px;margin-top:14px}
+.chip{background:#f1f0f8;border:0;border-radius:999px;padding:8px 14px;font-size:12.5px;font-weight:700;color:var(--dim);cursor:pointer;font-family:inherit}
+
+/* 실천 */
+.todo{background:var(--card);border-radius:var(--r2);padding:6px 16px;box-shadow:0 2px 10px rgba(30,20,90,.05);margin-bottom:22px}
+.td{display:flex;gap:12px;align-items:center;padding:13px 0;border-bottom:1px solid #f1f0f7}
+.td:last-child{border-bottom:0}
+.ck{width:24px;height:24px;border-radius:9px;border:2px solid #ddd9ee;flex:0 0 auto;display:grid;place-items:center;color:transparent;font-size:13px}
+.ck.on{background:var(--mint);border-color:var(--mint);color:#fff}
+.td .t{font-size:14.5px;font-weight:700}
+.td .b{font-size:12px;color:var(--faint);font-weight:600}
+.td.done .t{color:var(--faint);text-decoration:line-through}
+
+/* 스트릭 */
+.streak{display:flex;gap:7px;background:var(--card);border-radius:var(--r2);padding:16px;
+  box-shadow:0 2px 10px rgba(30,20,90,.05);margin-bottom:22px;align-items:flex-end}
+.sd{flex:1;text-align:center}
+.sd .bar{height:44px;border-radius:9px;background:#f1f0f8;display:flex;align-items:flex-end;overflow:hidden}
+.sd .bar i{width:100%;background:linear-gradient(180deg,#9b8bff,var(--brand));border-radius:9px}
+.sd span{display:block;font-size:11px;color:var(--faint);font-weight:700;margin-top:6px}
+
+/* 하단 탭 */
+.tabs{position:fixed;left:50%;transform:translateX(-50%);bottom:16px;background:#fff;
+  border-radius:999px;padding:8px;display:flex;gap:4px;box-shadow:0 10px 30px rgba(30,20,90,.16);z-index:20}
+.tb{border:0;background:none;border-radius:999px;padding:10px 15px;font-size:11.5px;font-weight:700;color:var(--faint);
+  display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;font-family:inherit;min-width:56px}
+.tb b{font-size:18px;font-weight:400;line-height:1}
+.tb.on{background:var(--brand);color:#fff}
+.tb.add{background:var(--ink);color:#fff;min-width:52px}
+
+@media(max-width:760px){
+  .page{padding:18px 16px 110px}
+  .mini{grid-template-columns:1fr}
+  .quick{grid-template-columns:repeat(4,1fr);gap:8px}
+  .qa{padding:12px 4px}
+  .qa .ic{width:40px;height:40px;font-size:18px}
+  .qa .lb{font-size:10.5px;white-space:nowrap}
+  .hd .hi{font-size:21px}
+  .cover{width:72px;height:106px}
+  .cont{gap:12px;padding:14px}
+  .cont .t{font-size:17px}
+  .meta{flex-wrap:wrap;font-size:12px}
+  .pill{white-space:nowrap;font-size:11px}
+  .bt{padding:11px 15px;font-size:13.5px}
+}
+@media(min-width:760px){
+  .grid2{display:grid;grid-template-columns:1.25fr 1fr;gap:22px;align-items:start}
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="hd">
+    <div class="hi">안녕하세요 👋<small>오늘도 사피엔스 이어서 읽어볼까요?</small></div>
+    <div class="av">🌙</div>
+  </div>
+
+  <div class="grid2">
+   <div>
+    <div class="hero">
+      <div class="lb">🔥 21일 연속 기록 중</div>
+      <div class="big">12 / 24권</div>
+      <div class="sub">2026년 목표 · 예정보다 0.4권 앞서고 있어요</div>
+      <div class="track"><i style="width:50%"></i></div>
+      <div class="foot"><span>50% 달성</span><span style="margin-left:auto">남은 12권 · 13일에 한 권</span></div>
+    </div>
+
+    <div class="quick">
+      <button class="qa"><div class="ic i1">📖</div><div class="lb">이어읽기</div></button>
+      <button class="qa"><div class="ic i2">✍️</div><div class="lb">문장 남기기</div></button>
+      <button class="qa"><div class="ic i3">📷</div><div class="lb">사진에서</div></button>
+      <button class="qa"><div class="ic i4">＋</div><div class="lb">책 추가</div></button>
+    </div>
+
+    <h2 class="sec">읽는 중 <a href="#">전체 4권 →</a></h2>
+
+    <div class="cont">
+      <div class="cover">사피엔스</div>
+      <div class="bd">
+        <div class="t">사피엔스</div>
+        <div class="a">유발 하라리</div>
+        <div class="track2"><i style="width:45%"></i></div>
+        <div class="meta"><span class="mono">284 / 636쪽</span>·<span class="mono">45%</span>
+          <span class="pill">9월 5일쯤 완독</span></div>
+        <div class="cta">
+          <button class="bt p">▶ 읽기 시작</button>
+          <button class="bt g">진도 입력</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="mini">
+      <div class="mc"><div class="cv">총, 균, 쇠</div>
+        <div style="flex:1;min-width:0"><div class="t">총, 균, 쇠</div>
+          <div class="pc mono">512 / 720쪽 · 71%</div>
+          <div class="tk"><i style="width:71%"></i></div></div></div>
+      <div class="mc"><div class="cv b">아몬드</div>
+        <div style="flex:1;min-width:0"><div class="t">아몬드</div>
+          <div class="pc mono">246 / 267쪽 · 92%</div>
+          <div class="tk"><i class="b" style="width:92%"></i></div></div></div>
+    </div>
+   </div>
+
+   <div>
+    <h2 class="sec">오늘의 문장</h2>
+    <div class="qcard">
+      <div class="mark">“</div>
+      <p>목표가 아니라 시스템에 집중하라. 목표는 방향을 정하고, 시스템은 그 방향으로 나아가게 한다.</p>
+      <div class="src">아주 작은 습관의 힘 · 41쪽</div>
+      <div class="row">
+        <button class="chip">🔀 다른 문장</button>
+        <button class="chip">🖼 카드 만들기</button>
+      </div>
+    </div>
+
+    <h2 class="sec">책에서 얻은 실천 <a href="#">3 / 9</a></h2>
+    <div class="todo">
+      <div class="td"><span class="ck">✓</span>
+        <div><div class="t">자기 전 책을 머리맡에 두고 2쪽만 읽기</div><div class="b">아주 작은 습관의 힘</div></div></div>
+      <div class="td"><span class="ck">✓</span>
+        <div><div class="t">주 1회 서점에서 30분 서서 읽기</div><div class="b">문학이라는 위로</div></div></div>
+      <div class="td done"><span class="ck on">✓</span>
+        <div><div class="t">밤 10시에 기록 남기기</div><div class="b">아주 작은 습관의 힘</div></div></div>
+    </div>
+
+    <h2 class="sec">이번 주 독서</h2>
+    <div class="streak">
+      <div class="sd"><div class="bar"><i style="height:35%"></i></div><span>일</span></div>
+      <div class="sd"><div class="bar"><i style="height:60%"></i></div><span>월</span></div>
+      <div class="sd"><div class="bar"><i style="height:22%"></i></div><span>화</span></div>
+      <div class="sd"><div class="bar"><i style="height:78%"></i></div><span>수</span></div>
+      <div class="sd"><div class="bar"><i style="height:48%"></i></div><span>목</span></div>
+      <div class="sd"><div class="bar"><i style="height:96%"></i></div><span>금</span></div>
+      <div class="sd"><div class="bar"><i style="height:64%"></i></div><span>토</span></div>
+    </div>
+   </div>
+  </div>
+
+</div>
+
+<nav class="tabs">
+  <button class="tb on"><b>⌂</b>홈</button>
+  <button class="tb"><b>▦</b>서재</button>
+  <button class="tb add"><b>＋</b></button>
+  <button class="tb"><b>❞</b>문장</button>
+  <button class="tb"><b>◫</b>통계</button>
+</nav>
+</body>
+</html>
