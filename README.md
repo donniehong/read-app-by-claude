@@ -1,0 +1,167 @@
+# 책갈피 — 독서기록 앱
+
+읽은 책이 아니라 **읽은 시간**을 남기는 개인 독서 기록 앱.
+모바일·PC 브라우저 어디서나 열리는 정적 웹앱(PWA)이며, 서버 없이 브라우저 안에만 데이터를 저장합니다.
+
+<p align="center"><img src="docs/screenshot-home.png" width="820" alt="홈 화면"></p>
+<p align="center">
+  <img src="docs/screenshot-stats.png" width="410" alt="통계 화면">
+  <img src="docs/screenshot-mobile.png" width="200" alt="모바일 화면">
+</p>
+
+---
+
+## 왜 또 하나의 독서앱인가
+
+기존 앱들은 대부분 **"몇 권 읽었나"** 를 센다. 그런데 정작 습관을 만드는 건 권수가 아니라
+매일의 짧은 독서 시간, 다시 꺼내 보는 문장, 책에서 건져 올린 한 가지 실천이다.
+책갈피는 그 세 가지에 초점을 맞췄다.
+
+**기존 앱에서 가져온 좋은 점**
+
+| 참고한 기능 | 책갈피에서의 구현 |
+|---|---|
+| 책 검색·표지 자동 등록 | Google Books 검색 기본 제공(키 불필요), 카카오 책검색 선택 가능, ISBN 바코드 스캔 |
+| 서재/책장 분류 | 읽는 중 · 읽고 싶은 · 완독 · 잠시 멈춤 · 중단 5단계 + 태그·우선순위 |
+| 별점과 리뷰 | 별점, 한 줄 평, 자유 감상 |
+| 연간 목표 | 목표 권수 + **진행 속도(페이스) 비교** |
+| 인용 수집 | 인용 · 메모 · 실천 3종 기록, 쪽수/태그 |
+| 통계 대시보드 | 월별 완독·독서시간, 분류 비중, 저자 랭킹, 별점 분포 |
+
+**책갈피만의 것 — 차별화 7가지**
+
+1. **독서 세션 타이머** — 읽기 시작/종료를 재고, 몇 쪽에서 몇 쪽까지 읽었는지 함께 남깁니다.
+   화면을 옮기거나 새로고침해도 타이머는 계속 돌아갑니다.
+2. **읽기 속도 → 완독 예상일** — 세션 기록에서 분당 페이지 속도를 계산해
+   *"남은 352쪽, 이 속도라면 9월 3일쯤 완독"* 처럼 알려줍니다.
+3. **목표 페이스메이커** — 단순 진행률이 아니라 오늘 날짜 기준으로
+   *"예정보다 1.4권 앞서고 있어요"* / *"남은 8권, 한 권에 12일씩이면 달성"* 을 계산합니다.
+4. **독서 잔디(히트맵)와 연속 기록일** — 하루라도 읽으면 칸이 채워집니다. 현재/최장 연속일 표시.
+5. **오늘의 문장** — 모아 둔 인용 중 하나를 매일 다시 꺼내 보여 줍니다.
+   덜 본 문장을 우선 고르는 가벼운 간격 반복(spaced repetition).
+6. **인용 카드 이미지** — 문장을 배경/비율을 골라 PNG 카드로 만들어 저장·공유합니다.
+7. **실천 카드** — 완독 회고에서 *"이 책에서 실천할 것"* 을 줄 단위로 적으면
+   체크리스트가 되어 홈에 뜹니다. 읽고 끝나지 않게 하는 장치.
+
+---
+
+## 바로 써 보기
+
+정적 파일만 있으면 되므로 아무 웹서버에서나 동작합니다.
+
+```bash
+git clone https://github.com/donniehong/read-app-by-claude.git
+cd read-app-by-claude
+python3 -m http.server 8000     # 또는  npx serve .
+# 브라우저에서 http://localhost:8000
+```
+
+> ES 모듈을 쓰기 때문에 `index.html`을 **파일로 직접 열면(`file://`) 동작하지 않습니다.**
+> 반드시 웹서버로 여세요.
+
+### GitHub Pages로 배포
+
+저장소 **Settings → Pages → Source: Deploy from a branch** 에서
+브랜치와 `/ (root)` 를 고르면 끝입니다. 빌드 과정이 없습니다.
+(`.nojekyll` 파일이 포함되어 있어 Jekyll 처리를 건너뜁니다.)
+
+### 휴대폰에 설치
+
+배포된 주소를 모바일 브라우저에서 열고
+**공유 → 홈 화면에 추가**(iOS) 또는 **앱 설치**(Android/Chrome).
+설치하면 오프라인에서도 열리고, 주소창 없는 전체 화면으로 실행됩니다.
+
+---
+
+## 처음 사용법
+
+1. **설정 → 샘플 데이터 넣어보기** 로 기능을 먼저 둘러보세요. (나중에 전체 초기화 가능)
+2. 상단 **＋ 책 추가** → 제목이나 저자로 검색 → 서재에 담기.
+   검색이 안 되는 책은 *"검색 없이 직접 입력"* 으로 등록합니다.
+3. 책을 열고 **⏱ 읽기 시작** → 다 읽으면 **종료** → 시간과 페이지를 저장.
+4. 마음에 남은 문장은 **✍️ 기록** 으로. 다음 날 홈에서 다시 만나게 됩니다.
+5. 다 읽으면 **완독** → 별점 · 한 줄 평 · **실천할 것** 을 남기세요.
+
+### 단축키 (PC)
+
+| 키 | 동작 |
+|---|---|
+| `/` | 검색창으로 이동 |
+| `N` | 책 추가 |
+| `Q` | 문장 기록 |
+| `T` | 밝게/어둡게 전환 |
+| `1`~`5` | 홈 · 서재 · 기록 · 문장 · 통계 |
+| `Esc` | 창 닫기 |
+
+---
+
+## 데이터와 프라이버시
+
+- 모든 기록은 **이 브라우저의 IndexedDB** 에만 저장됩니다. 계정도, 서버도 없습니다.
+  (IndexedDB를 쓸 수 없는 환경에서는 localStorage로 자동 폴백)
+- 외부로 나가는 통신은 **책을 검색할 때의 도서 API 요청과 표지 이미지** 뿐입니다.
+- 카카오 REST 키를 넣더라도 브라우저 안에만 저장되며 어디로도 전송되지 않습니다.
+- **브라우저 데이터를 지우면 기록도 사라집니다.** 설정에서 주기적으로
+  **JSON 내보내기** 로 백업하세요. 다른 기기에서는 *가져오기(합치기)* 로 이어서 쓸 수 있습니다.
+  (합치기는 ISBN 또는 제목+저자로 중복을 걸러냅니다.)
+- 서재 목록만 필요하면 **CSV 내보내기** 도 지원합니다.
+
+---
+
+## 검색 공급자
+
+| | Google Books (기본) | 카카오 책검색 |
+|---|---|---|
+| API 키 | 불필요 | [developers.kakao.com](https://developers.kakao.com) REST 키 필요 |
+| 국내서 정확도 | 보통 | 높음 |
+| 쪽수 제공 | ○ | ✗ (직접 입력) |
+
+설정 → 책 검색에서 바꿀 수 있고, 카카오 호출이 실패하면 자동으로 Google Books로 넘어갑니다.
+
+---
+
+## 구조
+
+빌드 도구·프레임워크·외부 라이브러리 없이 순수 ES 모듈로 작성했습니다.
+차트도 SVG를 직접 그립니다.
+
+```
+index.html                앱 셸 (상단바 · 사이드/탭 내비 · 뷰 컨테이너)
+css/styles.css            디자인 토큰 + 전체 스타일 (라이트/다크)
+manifest.webmanifest      PWA 매니페스트
+sw.js                     서비스 워커 (앱 셸 캐시 · 표지 이미지 캐시)
+js/
+  app.js                  부트스트랩 · 라우팅 · 단축키
+  router.js               해시 라우터
+  store.js                상태 · 영속화 · 파생 계산(진도/속도/예상/스트릭)
+  db.js                   IndexedDB 래퍼 (+ localStorage 폴백)
+  search.js               도서 검색 (Google Books / 카카오)
+  ui.js                   모달 · 토스트 · 별점 · 표지 등 공용 조각
+  dialogs.js              책 추가/수정 · 진도 · 완독 회고 · 노트 편집
+  timer.js                독서 세션 타이머
+  charts.js               막대 · 도넛 · 순위 · 히트맵 (SVG)
+  quotecard.js            인용 카드 이미지 생성 (Canvas)
+  theme.js                라이트/다크/시스템 테마
+  demo.js                 샘플 데이터
+  views/                  home · library · book · timeline · notes · stats · settings
+```
+
+### 데이터 모델 요약
+
+```js
+Book    { id, title, authors[], publisher, pageCount, cover, isbn, categories[],
+          status, rating, review, oneLine, rereadIntent, startedAt, finishedAt,
+          currentPage, tags[], priority, readCount, addedAt, updatedAt }
+Note    { id, bookId, type: 'quote'|'memo'|'action', text, comment, page, tags[],
+          done, recallCount, lastRecalledAt, createdAt }
+Session { id, bookId, date, startedAt, endedAt, minutes, startPage, endPage, memo }
+Meta    settings / goal:<연도>
+```
+
+---
+
+## 브라우저 지원
+
+Chrome · Edge · Safari · Firefox 최신 버전 (데스크톱/모바일).
+바코드 스캔은 `BarcodeDetector` 를 지원하는 브라우저(주로 Android Chrome)에서만 버튼이 나타납니다.
+`color-mix()` 를 사용하므로 아주 오래된 브라우저에서는 일부 색이 다르게 보일 수 있습니다.

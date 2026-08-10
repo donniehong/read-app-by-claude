@@ -1,0 +1,22 @@
+{
+  "name": "책갈피 — 독서기록",
+  "short_name": "책갈피",
+  "description": "읽는 시간을 기록하는 나만의 독서 서재. 오프라인에서도 동작합니다.",
+  "start_url": "./index.html#/home",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#f7f4ee",
+  "theme_color": "#a4552f",
+  "lang": "ko",
+  "categories": ["books", "productivity", "lifestyle"],
+  "icons": [
+    { "src": "./assets/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "./assets/icon-maskable.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "책 추가", "url": "./index.html#/add" },
+    { "name": "문장 모음", "url": "./index.html#/notes" },
+    { "name": "통계", "url": "./index.html#/stats" }
+  ]
+}
