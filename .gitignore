@@ -1,3 +1,6 @@
 node_modules/
 .DS_Store
 *.log
+
+# 미리보기용 번들 (필요할 때 다시 생성)
+docs/preview.html
