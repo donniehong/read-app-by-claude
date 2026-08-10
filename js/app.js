@@ -4,7 +4,7 @@ import { $, $$, on, debounce } from './util.js';
 import * as store from './store.js';
 import { applyTheme, nextMode, cacheTheme } from './theme.js';
 import { route, match, start, go, currentPathname, setCurrent } from './router.js';
-import { toast, modalOpen } from './ui.js';
+import { toast, modalOpen, hydrateImages } from './ui.js';
 import { openAddBook, openNoteEditor } from './dialogs.js';
 import * as timer from './timer.js';
 
@@ -80,6 +80,7 @@ function render() {
   // 내비게이션 활성 표시
   $$('[data-route]').forEach((a) => a.classList.toggle('is-active', a.dataset.route === hit.name));
   timer.render();
+  hydrateImages(viewEl);
 }
 
 /* ---------- 전역 이벤트 ---------- */

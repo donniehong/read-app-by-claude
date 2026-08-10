@@ -23,7 +23,8 @@ const DEFAULT_SETTINGS = {
   theme: 'auto',            // auto | light | dark
   shelfView: 'grid',        // grid | list
   defaultSort: 'recent',
-  searchProvider: 'google', // google | kakao
+  searchProvider: 'google', // google | aladin | kakao
+  aladinKey: '',
   kakaoKey: '',
   dailyMinutesTarget: 30,
 };
@@ -112,7 +113,9 @@ export function newBook(data = {}) {
     publishedDate: '',
     isbn: '',
     pageCount: 0,
-    cover: '',
+    cover: '',          // API 가 준 공식 표지 (주소)
+    photo: null,        // 내가 찍은 표지 사진 {id, bytes, w, h}
+    coverPref: 'photo', // 목록에서 무엇을 보여줄지: 'photo' | 'official'
     categories: [],
     description: '',
     link: '',
@@ -171,6 +174,8 @@ export async function setStatus(id, status) {
 }
 
 export async function removeBook(id) {
+  const target = getBook(id);
+  if (target?.photo?.id) await deleteImage(target.photo.id);
   state.books = state.books.filter((b) => b.id !== id);
   state.notes = state.notes.filter((n) => n.bookId !== id);
   state.sessions = state.sessions.filter((s) => s.bookId !== id);
@@ -275,6 +280,53 @@ export async function removeSession(id) {
   emit('sessions');
 }
 
+/* ---------- 사진 ---------- */
+// 사진은 용량이 커서 메모리에 미리 올리지 않는다. 필요할 때 한 장씩 읽고 캐시한다.
+const imageCache = new Map();
+
+/** @returns {Promise<{id:string, bytes:number, w:number, h:number}>} */
+export async function saveImage({ dataUrl, bytes, w, h }) {
+  const rec = { id: uid(), dataUrl, bytes, w, h, createdAt: new Date().toISOString() };
+  await db.put('images', rec);
+  imageCache.set(rec.id, dataUrl);
+  return { id: rec.id, bytes, w, h };
+}
+
+/** 화면에 붙일 수 있는 주소(data URL). 없으면 null. */
+export async function imageSrc(id) {
+  if (!id) return null;
+  if (imageCache.has(id)) return imageCache.get(id);
+  const rec = await db.get('images', id);
+  const src = rec?.dataUrl || null;
+  if (src) imageCache.set(id, src);
+  return src;
+}
+
+export async function deleteImage(id) {
+  if (!id) return;
+  imageCache.delete(id);
+  await db.del('images', id);
+}
+
+/** 저장된 사진의 장수와 대략적인 용량 — 목록 데이터만으로 계산한다 */
+export function photoUsage() {
+  const rows = [
+    ...state.books.map((b) => b.photo).filter(Boolean),
+    ...state.notes.map((n) => n.photo).filter(Boolean),
+  ];
+  return { count: rows.length, bytes: sum(rows, (r) => r.bytes || 0) };
+}
+
+/** 목록·상세에서 무엇을 표지로 보여줄지 */
+export function coverSourceOf(book) {
+  if (!book) return null;
+  const wantPhoto = (book.coverPref || 'photo') === 'photo';
+  if (wantPhoto && book.photo?.id) return { kind: 'image', id: book.photo.id };
+  if (book.cover) return { kind: 'url', url: book.cover };
+  if (book.photo?.id) return { kind: 'image', id: book.photo.id };
+  return null;
+}
+
 /* ---------- 파생 계산 ---------- */
 export function progressOf(book) {
   if (!book) return 0;
@@ -367,15 +419,31 @@ export function streak() {
 }
 
 /* ---------- 백업 / 복원 ---------- */
-export function exportData() {
+/**
+ * 백업 만들기. 사진은 용량이 크므로 포함 여부를 고를 수 있다.
+ * @param {{includePhotos?: boolean}} opts
+ */
+export async function exportData({ includePhotos = true } = {}) {
+  const images = [];
+  if (includePhotos) {
+    const ids = [
+      ...state.books.map((b) => b.photo?.id),
+      ...state.notes.map((n) => n.photo?.id),
+    ].filter(Boolean);
+    for (const id of ids) {
+      const rec = await db.get('images', id);
+      if (rec) images.push(rec);
+    }
+  }
   return {
     app: 'chaekgalpi',
-    version: 1,
+    version: 2,
     exportedAt: new Date().toISOString(),
     books: state.books,
     notes: state.notes,
     sessions: state.sessions,
     meta: state.meta,
+    images,
   };
 }
 
@@ -430,6 +498,24 @@ export async function importData(data, mode = 'merge') {
     (m) => mode === 'replace' || !state.meta.some((x) => x.id === m.id),
   );
 
+  // 사진 복원 — id 를 새로 발급하고, 이를 참조하는 책/노트를 함께 고쳐준다
+  const imgMap = new Map();
+  const newImages = [];
+  for (const raw of data.images || []) {
+    if (!raw?.dataUrl) continue;
+    const fresh = { ...raw, id: uid() };
+    imgMap.set(raw.id, fresh.id);
+    newImages.push(fresh);
+  }
+  const relink = (rec) => {
+    if (rec.photo?.id && imgMap.has(rec.photo.id)) rec.photo = { ...rec.photo, id: imgMap.get(rec.photo.id) };
+    else if (rec.photo?.id && !imgMap.has(rec.photo.id)) rec.photo = null;  // 사진 없이 내보낸 백업
+    return rec;
+  };
+  newBooks.forEach(relink);
+  newNotes.forEach(relink);
+  await db.putMany('images', newImages);
+
   await db.putMany('books', newBooks);
   await db.putMany('notes', newNotes);
   await db.putMany('sessions', newSessions);
@@ -441,11 +527,15 @@ export async function importData(data, mode = 'merge') {
   state.meta.push(...newMeta);
 
   emit('import');
-  return { books: newBooks.length, notes: newNotes.length, sessions: newSessions.length };
+  return {
+    books: newBooks.length, notes: newNotes.length,
+    sessions: newSessions.length, images: newImages.length,
+  };
 }
 
 export async function resetAll() {
   await db.clearAll();
+  imageCache.clear();
   state.books = []; state.notes = []; state.sessions = []; state.meta = [];
   emit('reset');
 }

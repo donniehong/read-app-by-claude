@@ -1,7 +1,7 @@
 // 공용 UI 조각 — 모달 / 토스트 / 확인창 / 표지 / 별점
 
 import { $, el, esc, on } from './util.js';
-import { STATUS, progressOf } from './store.js';
+import { STATUS, progressOf, coverSourceOf, imageSrc } from './store.js';
 
 /* ---------- 토스트 ---------- */
 export function toast(msg, ms = 2200) {
@@ -64,6 +64,7 @@ export function modal({ title, body, foot = '', wide = false, onMount }) {
 
   box.querySelector('[data-close]').addEventListener('click', close);
   onMount?.(box, close);
+  hydrateImages(box);
 
   // 첫 입력 요소에 포커스 (모바일 키보드 자동 팝업은 피한다)
   if (window.matchMedia('(min-width: 900px)').matches) {
@@ -111,18 +112,48 @@ export function confirmDialog({ title = '확인', message, okText = '확인', da
 }
 
 /* ---------- 표지 ---------- */
-export function coverHTML(book, { width } = {}) {
+/**
+ * 표지 조각. 내가 찍은 사진은 저장소에서 비동기로 읽어야 하므로
+ * 자리만 잡아두고 렌더 뒤 hydrateImages() 가 실제 이미지를 채운다.
+ *
+ * @param {object} book  책 (또는 검색 결과처럼 cover 만 있는 객체)
+ */
+export function coverHTML(book, { width, force } = {}) {
   const style = width ? ` style="width:${width}px"` : '';
-  if (book?.cover) {
+  const fallback = `<div class="cover__fallback" hidden>${esc(book?.title || '무제')}</div>`;
+  const src = force || coverSourceOf(book) || (book?.cover ? { kind: 'url', url: book.cover } : null);
+
+  if (src?.kind === 'image') {
     return `<div class="cover"${style}>
-      <img src="${esc(book.cover)}" alt="" loading="lazy"
+      <img alt="" data-img="${esc(src.id)}" />
+      ${fallback}
+    </div>`;
+  }
+  if (src?.kind === 'url') {
+    return `<div class="cover"${style}>
+      <img src="${esc(src.url)}" alt="" loading="lazy"
            onerror="this.style.display='none';this.nextElementSibling.hidden=false" />
-      <div class="cover__fallback" hidden>${esc(book.title || '')}</div>
+      ${fallback}
     </div>`;
   }
   return `<div class="cover"${style}>
     <div class="cover__fallback">${esc(book?.title || '무제')}</div>
   </div>`;
+}
+
+/** coverHTML 이 남긴 자리(data-img)를 실제 사진으로 채운다 */
+export async function hydrateImages(root = document) {
+  const nodes = [...root.querySelectorAll('img[data-img]')];
+  await Promise.all(nodes.map(async (img) => {
+    const id = img.dataset.img;
+    delete img.dataset.img;
+    try {
+      const src = await imageSrc(id);
+      if (src) { img.src = src; return; }
+    } catch (e) { console.warn('[ui] 사진을 읽지 못했어요', e); }
+    img.style.display = 'none';
+    img.parentElement?.querySelector('.cover__fallback')?.removeAttribute('hidden');
+  }));
 }
 
 /* ---------- 별점 ---------- */

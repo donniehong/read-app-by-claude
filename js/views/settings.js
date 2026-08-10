@@ -3,6 +3,8 @@
 import { el, esc, on, ymd, downloadBlob, pickFile, nfmt } from '../util.js';
 import * as store from '../store.js';
 import { toast, confirmDialog, fieldHTML } from '../ui.js';
+import { testProvider } from '../search.js';
+import { fmtBytes } from '../image.js';
 import { applyTheme } from '../theme.js';
 import { seedDemo } from '../demo.js';
 import { go } from '../router.js';
@@ -16,6 +18,7 @@ export default function settingsView() {
     notes: store.notes().length,
     sessions: store.sessions().length,
   };
+  const photo = store.photoUsage();
 
   const root = el(`
     <div>
@@ -48,16 +51,29 @@ export default function settingsView() {
         <div class="section__head"><h2>책 검색</h2></div>
         <div class="card" style="padding:16px;display:flex;flex-direction:column;gap:12px">
           ${fieldHTML('검색 공급자', `<select class="select" id="stProvider">
-            <option value="google" ${st.searchProvider === 'google' ? 'selected' : ''}>Google Books (키 불필요)</option>
-            <option value="kakao"  ${st.searchProvider === 'kakao' ? 'selected' : ''}>카카오 책검색 (국내서 정확, 키 필요)</option>
+            <option value="google" ${st.searchProvider === 'google' ? 'selected' : ''}>Google Books — 키 불필요</option>
+            <option value="aladin" ${st.searchProvider === 'aladin' ? 'selected' : ''}>알라딘 — 국내서 정확, 쪽수 제공 (키 필요)</option>
+            <option value="kakao"  ${st.searchProvider === 'kakao' ? 'selected' : ''}>카카오 책검색 — 국내서 정확 (키 필요, 쪽수 없음)</option>
           </select>`)}
-          <div id="stKakaoWrap" ${st.searchProvider === 'kakao' ? '' : 'hidden'}>
-            ${fieldHTML('카카오 REST API 키', `<input class="input" id="stKakaoKey" value="${esc(st.kakaoKey)}" placeholder="developers.kakao.com 에서 발급">`)}
-            <p class="tiny faint" style="margin-top:6px">
-              키는 이 브라우저에만 저장되며 외부로 전송되지 않아요. 카카오는 쪽수를 제공하지 않아 직접 입력이 필요할 수 있어요.
-            </p>
+
+          <div id="stAladinWrap" ${st.searchProvider === 'aladin' ? '' : 'hidden'}>
+            ${fieldHTML('알라딘 TTB 키', `<input class="input" id="stAladinKey" value="${esc(st.aladinKey)}" placeholder="ttb..." autocomplete="off">`)}
           </div>
-          <button class="btn btn--primary btn--sm" id="stSaveSearch" type="button" style="align-self:flex-start">검색 설정 저장</button>
+          <div id="stKakaoWrap" ${st.searchProvider === 'kakao' ? '' : 'hidden'}>
+            ${fieldHTML('카카오 REST API 키', `<input class="input" id="stKakaoKey" value="${esc(st.kakaoKey)}" placeholder="developers.kakao.com 에서 발급" autocomplete="off">`)}
+          </div>
+
+          <p class="tiny faint" id="stKeyNote" ${st.searchProvider === 'google' ? 'hidden' : ''}>
+            키는 이 브라우저에만 저장되며 어디로도 전송되지 않아요.
+            알라딘·카카오는 원래 서버에서 부르는 API라 브라우저에서 막힐 수 있습니다.
+            아래 <b>연결 테스트</b>로 확인해 보세요. 막히면 Google Books 로 자동으로 넘어갑니다.
+          </p>
+
+          <div class="chips">
+            <button class="btn btn--primary btn--sm" id="stSaveSearch" type="button">검색 설정 저장</button>
+            <button class="btn btn--sm" id="stTest" type="button">연결 테스트</button>
+          </div>
+          <div id="stTestOut" class="tiny" hidden></div>
         </div>
       </section>
 
@@ -70,9 +86,11 @@ export default function settingsView() {
           </p>
           <p class="tiny faint" style="margin-bottom:14px">
             현재 책 ${nfmt(counts.books)}권 · 기록 ${nfmt(counts.notes)}개 · 독서 세션 ${nfmt(counts.sessions)}회
+            ${photo.count ? ` · 사진 ${nfmt(photo.count)}장 (${fmtBytes(photo.bytes)})` : ''}
           </p>
           <div class="chips">
-            <button class="btn btn--sm" id="stExport" type="button">JSON 내보내기</button>
+            <button class="btn btn--sm" id="stExport" type="button">
+              JSON 내보내기${photo.count ? ` (약 ${fmtBytes(Math.round(photo.bytes * 1.37) + 60000)})` : ''}</button>
             <button class="btn btn--sm" id="stImportMerge" type="button">가져오기 (합치기)</button>
             <button class="btn btn--sm" id="stImportReplace" type="button">가져오기 (덮어쓰기)</button>
             <button class="btn btn--sm" id="stCsv" type="button">CSV 내보내기</button>
@@ -115,23 +133,69 @@ export default function settingsView() {
   };
 
   /* ---- 검색 ---- */
-  root.querySelector('#stProvider').onchange = (e) => {
-    root.querySelector('#stKakaoWrap').hidden = e.target.value !== 'kakao';
+  const provider = () => root.querySelector('#stProvider').value;
+  const keyOf = (p) => (p === 'aladin' ? root.querySelector('#stAladinKey')?.value.trim()
+    : p === 'kakao' ? root.querySelector('#stKakaoKey')?.value.trim() : '') || '';
+
+  root.querySelector('#stProvider').onchange = () => {
+    const p = provider();
+    root.querySelector('#stAladinWrap').hidden = p !== 'aladin';
+    root.querySelector('#stKakaoWrap').hidden = p !== 'kakao';
+    root.querySelector('#stKeyNote').hidden = p === 'google';
   };
+
   root.querySelector('#stSaveSearch').onclick = async () => {
     await store.saveSettings({
-      searchProvider: root.querySelector('#stProvider').value,
+      searchProvider: provider(),
+      aladinKey: root.querySelector('#stAladinKey')?.value.trim() || '',
       kakaoKey: root.querySelector('#stKakaoKey')?.value.trim() || '',
     });
     toast('검색 설정을 저장했어요.');
   };
 
+  root.querySelector('#stTest').onclick = async (e) => {
+    const btn = e.currentTarget;
+    const out = root.querySelector('#stTestOut');
+    const p = provider();
+    const key = keyOf(p);
+
+    if (p !== 'google' && !key) {
+      out.hidden = false;
+      out.style.color = 'var(--danger)';
+      out.textContent = '먼저 키를 입력해 주세요.';
+      return;
+    }
+
+    btn.disabled = true;
+    out.hidden = false;
+    out.style.color = 'var(--text-dim)';
+    out.textContent = '‘사피엔스’로 실제 검색을 시도하는 중…';
+
+    const r = await testProvider(p, key);
+    btn.disabled = false;
+    out.style.color = r.ok ? 'var(--ok)' : 'var(--danger)';
+    out.textContent = r.ok
+      ? `✅ ${r.message}${r.sample ? ` · 예: ${r.sample}${r.pageCount ? ` (${r.pageCount}쪽)` : ''}` : ''}`
+      : `❌ ${r.message}${p !== 'google' ? ' 이 공급자는 쓸 수 없으니 Google Books 로 두는 걸 권해요.' : ''}`;
+  };
+
   /* ---- 백업 ---- */
-  root.querySelector('#stExport').onclick = () => {
-    const data = store.exportData();
-    downloadBlob(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }),
-      `책갈피_백업_${ymd()}.json`);
-    toast('백업 파일을 내려받았어요.');
+  root.querySelector('#stExport').onclick = async (e) => {
+    const btn = e.currentTarget;
+    btn.disabled = true;
+    const label = btn.textContent;
+    btn.textContent = '만드는 중…';
+    try {
+      const data = await store.exportData({ includePhotos: true });
+      const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+      downloadBlob(blob, `책갈피_백업_${ymd()}.json`);
+      toast(`백업을 내려받았어요 (${fmtBytes(blob.size)})`);
+    } catch (err) {
+      toast(`백업에 실패했어요: ${err.message}`);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = label;
+    }
   };
 
   const doImport = async (mode) => {
@@ -148,7 +212,7 @@ export default function settingsView() {
         if (!ok) return;
       }
       const r = await store.importData(data, mode);
-      toast(`책 ${r.books}권 · 기록 ${r.notes}개 · 세션 ${r.sessions}회를 가져왔어요.`);
+      toast(`책 ${r.books}권 · 기록 ${r.notes}개 · 세션 ${r.sessions}회${r.images ? ` · 사진 ${r.images}장` : ''}을 가져왔어요.`);
     } catch (e) {
       toast(`가져오기 실패: ${e.message}`);
     }

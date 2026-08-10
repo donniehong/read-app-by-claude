@@ -21,7 +21,8 @@
 
 | 참고한 기능 | 책갈피에서의 구현 |
 |---|---|
-| 책 검색·표지 자동 등록 | Google Books 검색 기본 제공(키 불필요), 카카오 책검색 선택 가능, ISBN 바코드 스캔 |
+| 책 검색·표지 자동 등록 | 알라딘·카카오·Google Books 중 선택 (기본은 키가 필요 없는 Google Books), ISBN 바코드 스캔 |
+| 내가 찍은 표지 | 공식 표지와 별개로 **내 책 사진 한 장**을 붙이고, 목록에 무엇을 보여줄지 고를 수 있음 |
 | 서재/책장 분류 | 읽는 중 · 읽고 싶은 · 완독 · 잠시 멈춤 · 중단 5단계 + 태그·우선순위 |
 | 별점과 리뷰 | 별점, 한 줄 평, 자유 감상 |
 | 연간 목표 | 목표 권수 + **진행 속도(페이스) 비교** |
@@ -42,6 +43,8 @@
 6. **인용 카드 이미지** — 문장을 배경/비율을 골라 PNG 카드로 만들어 저장·공유합니다.
 7. **실천 카드** — 완독 회고에서 *"이 책에서 실천할 것"* 을 줄 단위로 적으면
    체크리스트가 되어 홈에 뜹니다. 읽고 끝나지 않게 하는 장치.
+8. **내가 찍은 표지** — 온라인 표지와 별개로, 실제로 읽은 내 책을 찍어 붙입니다.
+   장변 1600px로 자동으로 줄여 저장하고, 목록에 어느 쪽을 보여줄지 고를 수 있습니다.
 
 ---
 
@@ -101,6 +104,8 @@ python3 -m http.server 8000     # 또는  npx serve .
   (IndexedDB를 쓸 수 없는 환경에서는 localStorage로 자동 폴백)
 - 외부로 나가는 통신은 **책을 검색할 때의 도서 API 요청과 표지 이미지** 뿐입니다.
 - 카카오 REST 키를 넣더라도 브라우저 안에만 저장되며 어디로도 전송되지 않습니다.
+- **직접 찍은 사진도 백업에 함께 담깁니다.** 내보내기 버튼에 예상 용량이 표시되니
+  파일이 커지는 것을 미리 알 수 있습니다.
 - **브라우저 데이터를 지우면 기록도 사라집니다.** 설정에서 주기적으로
   **JSON 내보내기** 로 백업하세요. 다른 기기에서는 *가져오기(합치기)* 로 이어서 쓸 수 있습니다.
   (합치기는 ISBN 또는 제목+저자로 중복을 걸러냅니다.)
@@ -110,13 +115,19 @@ python3 -m http.server 8000     # 또는  npx serve .
 
 ## 검색 공급자
 
-| | Google Books (기본) | 카카오 책검색 |
-|---|---|---|
-| API 키 | 불필요 | [developers.kakao.com](https://developers.kakao.com) REST 키 필요 |
-| 국내서 정확도 | 보통 | 높음 |
-| 쪽수 제공 | ○ | ✗ (직접 입력) |
+| | Google Books (기본) | 알라딘 | 카카오 책검색 |
+|---|---|---|---|
+| API 키 | 불필요 | TTB 키 필요 (알라딘 로그인 후 발급) | REST 키 필요 |
+| 국내서 정확도 | 보통 | 높음 | 높음 |
+| 쪽수 제공 | 있을 때만 | ○ | ✗ (직접 입력) |
+| 표지 화질 | 낮음(약 128px) | 높음 | 보통 |
 
-설정 → 책 검색에서 바꿀 수 있고, 카카오 호출이 실패하면 자동으로 Google Books로 넘어갑니다.
+설정 → 책 검색에서 고를 수 있고, 앞 순위가 실패하면 **자동으로 Google Books 로 내려갑니다.**
+
+> **알라딘·카카오는 브라우저에서 막힐 수 있습니다.** 두 API 모두 서버에서 호출하는 것을 전제로
+> 만들어져 있어, 서버 없는 이 앱에서 부르면 CORS 로 차단될 수 있습니다.
+> 설정의 **연결 테스트** 버튼을 누르면 사용자의 브라우저에서 실제로 되는지 바로 알려줍니다.
+> 키는 이 브라우저에만 저장되며 저장소나 코드에는 들어가지 않습니다.
 
 ---
 
@@ -135,7 +146,8 @@ js/
   router.js               해시 라우터
   store.js                상태 · 영속화 · 파생 계산(진도/속도/예상/스트릭)
   db.js                   IndexedDB 래퍼 (+ localStorage 폴백)
-  search.js               도서 검색 (Google Books / 카카오)
+  search.js               도서 검색 (알라딘 / 카카오 / Google Books, 자동 폴백)
+  image.js                사진 줄이기·고르기
   ui.js                   모달 · 토스트 · 별점 · 표지 등 공용 조각
   dialogs.js              책 추가/수정 · 진도 · 완독 회고 · 노트 편집
   timer.js                독서 세션 타이머
@@ -149,9 +161,13 @@ js/
 ### 데이터 모델 요약
 
 ```js
-Book    { id, title, authors[], publisher, pageCount, cover, isbn, categories[],
+Book    { id, title, authors[], publisher, pageCount, isbn, categories[],
+          cover,            // API 가 준 공식 표지 (주소)
+          photo,            // 내가 찍은 사진 {id, bytes, w, h}
+          coverPref,        // 목록에 무엇을 보여줄지: 'photo' | 'official'
           status, rating, review, oneLine, rereadIntent, startedAt, finishedAt,
           currentPage, tags[], priority, readCount, addedAt, updatedAt }
+Image   { id, dataUrl, bytes, w, h, createdAt }   // 사진은 따로 보관해 필요할 때만 읽는다
 Note    { id, bookId, type: 'quote'|'memo'|'action', text, comment, page, tags[],
           done, recallCount, lastRecalledAt, createdAt }
 Session { id, bookId, date, startedAt, endedAt, minutes, startPage, endPage, memo }

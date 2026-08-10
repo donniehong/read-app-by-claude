@@ -42,14 +42,13 @@ export function openAddBook({ initialQuery = '' } = {}) {
         status.textContent = '검색 중…';
         results.innerHTML = '<div class="skel" style="height:56px"></div>'.repeat(3);
         try {
-          const { items, provider, warning } = await searchBooks(q, { signal: ctrl.signal });
+          const { items, providerLabel, warning } = await searchBooks(q, { signal: ctrl.signal });
           if (!items.length) {
             results.innerHTML = '';
             status.textContent = '검색 결과가 없어요. 아래에서 직접 입력해 보세요.';
             return;
           }
-          status.textContent = warning
-            || `${items.length}건 · ${provider === 'kakao' ? '카카오 책검색' : 'Google Books'}`;
+          status.textContent = warning || `${items.length}건 · ${providerLabel}`;
           results.innerHTML = items.map((it, i) => {
             const dup = store.findDuplicate(it);
             return `
@@ -182,7 +181,12 @@ export function openBookForm({ draft = null, book = null } = {}) {
       </div>
       <div class="row">
         ${fieldHTML('출판사', `<input class="input" id="bfPublisher" value="${esc(b.publisher)}">`)}
-        ${fieldHTML('전체 쪽수', `<input class="input" id="bfPages" type="number" min="0" value="${b.pageCount || ''}">`)}
+        <div class="field">
+          <label>전체 쪽수 ${!b.pageCount ? '<span style="color:var(--warn)">· 검색으로 못 채웠어요</span>' : ''}</label>
+          <input class="input" id="bfPages" type="number" min="0" value="${b.pageCount || ''}"
+                 ${!b.pageCount ? 'placeholder="책 뒤쪽에서 확인해 입력해 주세요" style="border-color:var(--warn)"' : ''}>
+          ${!b.pageCount ? '<p class="tiny faint">쪽수가 있어야 진도율과 완독 예상일이 계산돼요.</p>' : ''}
+        </div>
       </div>
       <div class="row">
         ${fieldHTML('상태', `<select class="select" id="bfStatus">

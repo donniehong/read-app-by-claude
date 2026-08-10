@@ -571,3 +571,15 @@ input[type="search"]::-webkit-search-cancel-button { -webkit-appearance: none; }
 @keyframes sk { 50% { opacity: .55 } }
 
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* ---------- 표지 두 장 (공식 / 내 사진) ---------- */
+.coverbox { display: flex; flex-direction: column; gap: 8px; width: 128px; flex: 0 0 auto; }
+@media (max-width: 480px) { .coverbox { width: 100px; } }
+.coverbox .cover { width: 100%; }
+.coverbox__pick { display: flex; background: var(--bg-sunk); border-radius: 999px; padding: 3px; }
+.coverbox__opt {
+  flex: 1; border: 0; background: none; cursor: pointer; border-radius: 999px;
+  padding: 5px 4px; font-size: 11.5px; font-weight: 800; color: var(--text-faint);
+}
+.coverbox__opt.is-on { background: var(--bg-elev); color: var(--accent); box-shadow: var(--shadow-sm); }
+.coverbox__btn { width: 100%; padding: 0 8px; font-size: 12px; }

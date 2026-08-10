@@ -3,6 +3,7 @@
 import { el, esc, on, nfmt, fmtDate, fmtMinutes, sum, daysBetween } from '../util.js';
 import * as store from '../store.js';
 import { coverHTML, ratingInput, toast, confirmDialog } from '../ui.js';
+import { shrinkImage, pickImage, fmtBytes } from '../image.js';
 import { openBookForm, openProgressDialog, openNoteEditor, openFinishDialog } from '../dialogs.js';
 import { openQuoteCard } from '../quotecard.js';
 import * as timer from '../timer.js';
@@ -34,7 +35,20 @@ export default function bookView({ id }) {
       <button class="btn btn--ghost btn--sm" data-back type="button" style="margin-bottom:14px">← 뒤로</button>
 
       <div class="bookhead">
-        ${coverHTML(b)}
+        <div class="coverbox">
+          ${coverHTML(b)}
+          ${b.photo || b.cover ? `
+            <div class="coverbox__pick">
+              ${b.cover ? `<button class="coverbox__opt ${(b.coverPref || 'photo') === 'official' || !b.photo ? 'is-on' : ''}"
+                    data-pref="official" type="button">공식</button>` : ''}
+              ${b.photo ? `<button class="coverbox__opt ${(b.coverPref || 'photo') === 'photo' ? 'is-on' : ''}"
+                    data-pref="photo" type="button">내 사진</button>` : ''}
+            </div>` : ''}
+          <button class="btn btn--soft btn--sm coverbox__btn" data-photo type="button">
+            ${b.photo ? '📷 사진 바꾸기' : '📷 내 책 사진'}
+          </button>
+          ${b.photo ? `<button class="btn btn--ghost btn--sm coverbox__btn" data-photodel type="button">사진 삭제</button>` : ''}
+        </div>
         <div class="bookhead__info">
           <span class="badge badge--${esc(b.status)}">${esc(store.STATUS[b.status])}</span>
           ${b.readCount > 1 ? `<span class="badge badge--want">${b.readCount}회독</span>` : ''}
@@ -243,6 +257,39 @@ export default function bookView({ id }) {
     go(`#/book/${id}`, { replace: true });
   });
   on(root, 'click', '[data-progress]', () => openProgressDialog(store.getBook(id)));
+
+  // 표지 — 어느 쪽을 대표로 쓸지
+  on(root, 'click', '[data-pref]', async (e, t) => {
+    await store.updateBook(id, { coverPref: t.dataset.pref });
+  });
+
+  // 내가 찍은 표지 사진 올리기 / 바꾸기
+  on(root, 'click', '[data-photo]', async () => {
+    const file = await pickImage();
+    if (!file) return;
+    try {
+      toast('사진을 저장하는 중…');
+      const shrunk = await shrinkImage(file);
+      const prev = store.getBook(id)?.photo;
+      const photo = await store.saveImage(shrunk);
+      await store.updateBook(id, { photo, coverPref: 'photo' });
+      if (prev?.id) await store.deleteImage(prev.id);
+      toast(`사진을 저장했어요 (${fmtBytes(photo.bytes)})`);
+    } catch (err) {
+      toast(`사진을 저장하지 못했어요: ${err.message}`);
+    }
+  });
+
+  on(root, 'click', '[data-photodel]', async () => {
+    const ok = await confirmDialog({
+      title: '사진 삭제', message: '내가 찍은 표지 사진을 지울까요?', okText: '삭제', danger: true,
+    });
+    if (!ok) return;
+    const prev = store.getBook(id)?.photo;
+    await store.updateBook(id, { photo: null, coverPref: 'official' });
+    if (prev?.id) await store.deleteImage(prev.id);
+    toast('사진을 지웠어요.');
+  });
   on(root, 'click', '[data-finish]', () => openFinishDialog(store.getBook(id)));
   on(root, 'click', '[data-note]', () => openNoteEditor({ bookId: id }));
   on(root, 'click', '[data-manual]', () => timer.manualSessionDialog(id));

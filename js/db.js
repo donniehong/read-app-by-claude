@@ -2,8 +2,8 @@
 // 브라우저가 IndexedDB를 막아둔 경우(사파리 프라이빗 등) localStorage로 자동 폴백한다.
 
 const DB_NAME = 'chaekgalpi';
-const DB_VER  = 1;
-const STORES  = ['books', 'notes', 'sessions', 'meta'];
+const DB_VER  = 2;
+const STORES  = ['books', 'notes', 'sessions', 'meta', 'images'];
 
 let dbp = null;
 let fallback = false;
@@ -49,6 +49,18 @@ const lsWrite = (store, rows) => {
 };
 
 /* ---------- 공개 API ---------- */
+/** 단건 조회 — 사진처럼 전부 메모리에 올리면 안 되는 데이터에 쓴다 */
+export async function get(store, id) {
+  const db = await openDB();
+  if (!db || fallback) return lsAll(store).find((r) => r.id === id) || null;
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(store, 'readonly');
+    const req = tx.objectStore(store).get(id);
+    req.onsuccess = () => resolve(req.result || null);
+    req.onerror = () => reject(req.error);
+  });
+}
+
 export async function getAll(store) {
   const db = await openDB();
   if (!db || fallback) return lsAll(store);
