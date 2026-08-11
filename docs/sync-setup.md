@@ -95,18 +95,34 @@ create policy "own photos" on storage.objects
 
 ## 4. 앱에 주소와 키 넣기
 
-**Project Settings → API** 에서 두 가지를 복사합니다.
+Supabase 대시보드는 메뉴 이름과 위치가 종종 바뀝니다.
+**어느 메뉴에 있든 아래 두 가지를 찾으시면 됩니다.**
 
-| 항목 | 예시 | 앱에서 넣을 곳 |
+### ① 프로젝트 주소
+
+`https://<영문숫자>.supabase.co` 형태의 주소입니다.
+왼쪽 아래 **Settings**(톱니바퀴) → **Data API** 에 있습니다. 예전 화면에서는 **API** 라는 이름이었습니다.
+
+### ② 공개 키
+
+**Settings → API Keys** 에 있습니다. 화면에 따라 두 종류 중 하나 또는 둘 다 보입니다.
+
+| 화면에 보이는 이름 | 생김새 | 이 앱에 넣어도 되나 |
 |---|---|---|
-| Project URL | `https://abcdefgh.supabase.co` | 프로젝트 주소 |
-| API Keys → **anon public** | `eyJhbGciOi...` (아주 긴 문자열) | anon public 키 |
+| **Publishable key** | `sb_publishable_…` | ○ 새 방식. 이걸 넣으세요 |
+| **anon** · **public** (Legacy API keys) | `eyJhbGciOi…` (아주 긴 문자열) | ○ 예전 방식. 이것도 그대로 됩니다 |
+| **Secret key** · **service_role** | `sb_secret_…` · `eyJ…` | ✗ **절대 넣지 마세요** |
+
+둘 중 **아무거나 하나면 됩니다.** `Publishable` 만 보이면 그것을, `anon public` 만 보이면 그것을 쓰세요.
 
 앱의 **설정 → 기기 간 동기화** 에 붙여넣고 **연결 확인** 을 누릅니다.
 이어서 이메일과 비밀번호로 **계정 만들기** 를 누르면 끝입니다.
 
-> **service_role 키는 절대 넣지 마세요.** 그 키는 모든 잠금을 무시합니다.
-> `anon public` 키는 원래 공개되는 키이고, 실제 잠금은 2번에서 건 규칙이 합니다.
+> **왜 공개 키는 브라우저에 넣어도 되나요?**
+> 그 키는 "이 프로젝트에 말을 걸겠다"는 표찰일 뿐, 문을 여는 열쇠가 아닙니다.
+> 실제 잠금은 2번에서 건 규칙(Row Level Security)이 하고, 로그인한 본인의 기록만 열립니다.
+> 반면 **Secret · service_role 키는 그 잠금을 통째로 무시합니다.**
+> 실수로 넣으시면 앱이 알아보고 막아 드립니다.
 
 ## 5. 다른 기기에서
 
