@@ -9,6 +9,7 @@ import { coverHTML, toast } from '../ui.js';
 import { heatmap } from '../charts.js';
 import * as timer from '../timer.js';
 import { openAddBook, openProgressDialog, openNoteEditor } from '../dialogs.js';
+import { openPhotoNote } from '../photonote.js';
 import { openQuoteCard } from '../quotecard.js';
 import { go } from '../router.js';
 
@@ -348,7 +349,7 @@ export default function homeView() {
       if (!books.length) return toast('먼저 책을 추가해 주세요.');
       return openNoteEditor({ type: 'quote' });
     }
-    if (what === 'photo') return toast('사진에서 문장 가져오기는 준비 중이에요.');
+    if (what === 'photo') return openPhotoNote();
     if (what === 'read') {
       if (!first) return toast('읽는 중인 책이 없어요.');
       if (timer.isRunning(first.id)) return timer.stop();

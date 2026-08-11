@@ -176,6 +176,9 @@ export async function setStatus(id, status) {
 export async function removeBook(id) {
   const target = getBook(id);
   if (target?.photo?.id) await deleteImage(target.photo.id);
+  for (const n of notesOf(id)) {
+    if (n.photo?.id) await deleteImage(n.photo.id);
+  }
   state.books = state.books.filter((b) => b.id !== id);
   state.notes = state.notes.filter((n) => n.bookId !== id);
   state.sessions = state.sessions.filter((s) => s.bookId !== id);
@@ -224,6 +227,8 @@ export async function updateNote(id, patch) {
   return n;
 }
 export async function removeNote(id) {
+  const target = state.notes.find((n) => n.id === id);
+  if (target?.photo?.id) await deleteImage(target.photo.id);
   state.notes = state.notes.filter((n) => n.id !== id);
   await db.del('notes', id);
   emit('notes');

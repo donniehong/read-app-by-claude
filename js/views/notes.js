@@ -4,6 +4,7 @@ import { el, esc, on, fmtRelative } from '../util.js';
 import * as store from '../store.js';
 import { toast, confirmDialog } from '../ui.js';
 import { openNoteEditor } from '../dialogs.js';
+import { openPhotoNote } from '../photonote.js';
 import { openQuoteCard } from '../quotecard.js';
 import { go } from '../router.js';
 
@@ -22,7 +23,10 @@ export default function notesView(params = {}) {
       <div class="section__head" style="margin-bottom:14px">
         <h1 style="font-size:22px">문장·실천</h1>
         <span class="muted tiny">${all.length}개</span>
-        <button class="btn btn--sm btn--primary" data-new type="button" style="margin-left:auto">＋ 기록</button>
+        <span style="margin-left:auto;display:flex;gap:8px">
+          <button class="btn btn--sm" data-newphoto type="button">📷 사진에서</button>
+          <button class="btn btn--sm btn--primary" data-new type="button">＋ 기록</button>
+        </span>
       </div>
 
       <div class="scroller" style="margin-bottom:10px">
@@ -70,6 +74,7 @@ export default function notesView(params = {}) {
           <div style="min-width:0;flex:1">
             <div class="note__text">${esc(n.text)}</div>
             ${n.comment ? `<div class="note__comment">${esc(n.comment)}</div>` : ''}
+            ${n.photo?.id ? `<div class="note__photo"><img alt="문장을 찍은 사진" data-img="${esc(n.photo.id)}"></div>` : ''}
           </div>
         </div>
         <div class="note__foot">
@@ -123,6 +128,7 @@ export default function notesView(params = {}) {
     uiState.hideDone = e.target.checked; paint();
   });
 
+  on(root, 'click', '[data-newphoto]', () => openPhotoNote());
   on(root, 'click', '[data-new]', () => {
     if (!store.books().length) { toast('먼저 책을 추가해 주세요.'); return; }
     openNoteEditor({ type: uiState.type === 'all' ? 'quote' : uiState.type });

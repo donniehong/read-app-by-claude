@@ -4,6 +4,7 @@ import { el, esc, on, nfmt, fmtDate, fmtMinutes, sum, daysBetween } from '../uti
 import * as store from '../store.js';
 import { coverHTML, ratingInput, toast, confirmDialog } from '../ui.js';
 import { shrinkImage, pickImage, fmtBytes } from '../image.js';
+import { openPhotoNote } from '../photonote.js';
 import { openBookForm, openProgressDialog, openNoteEditor, openFinishDialog } from '../dialogs.js';
 import { openQuoteCard } from '../quotecard.js';
 import * as timer from '../timer.js';
@@ -78,6 +79,7 @@ export default function bookView({ id }) {
               <button class="btn" data-finish type="button">완독</button>
             `}
             <button class="btn" data-note type="button">✍️ 기록</button>
+            <button class="btn" data-photonote type="button">📷 사진에서</button>
             <button class="btn btn--icon" data-menu type="button" title="더보기">⋯</button>
           </div>
         </div>
@@ -153,6 +155,7 @@ export default function bookView({ id }) {
           <div style="min-width:0;flex:1">
             <div class="note__text">${esc(n.text)}</div>
             ${n.comment ? `<div class="note__comment">${esc(n.comment)}</div>` : ''}
+            ${n.photo?.id ? `<div class="note__photo"><img alt="문장을 찍은 사진" data-img="${esc(n.photo.id)}"></div>` : ''}
           </div>
         </div>
         <div class="note__foot">
@@ -292,6 +295,7 @@ export default function bookView({ id }) {
   });
   on(root, 'click', '[data-finish]', () => openFinishDialog(store.getBook(id)));
   on(root, 'click', '[data-note]', () => openNoteEditor({ bookId: id }));
+  on(root, 'click', '[data-photonote]', () => openPhotoNote({ bookId: id }));
   on(root, 'click', '[data-manual]', () => timer.manualSessionDialog(id));
 
   on(root, 'click', '[data-reread]', async () => {
