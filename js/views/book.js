@@ -1,6 +1,6 @@
 // 책 상세 — 진도 · 감상 · 문장/메모/실천 · 독서 세션
 
-import { el, esc, on, nfmt, fmtDate, fmtMinutes, sum, daysBetween } from '../util.js';
+import { el, esc, on, nfmt, fmtDate, fmtMinutes, sum, daysBetween, dueWord } from '../util.js';
 import * as store from '../store.js';
 import { coverHTML, ratingInput, toast, confirmDialog } from '../ui.js';
 import { shrinkImage, pickImage, fmtBytes } from '../image.js';
@@ -80,6 +80,9 @@ export default function bookView({ id }) {
             `}
             <button class="btn" data-note type="button">✍️ 기록</button>
             <button class="btn" data-photonote type="button">📷 사진에서</button>
+            ${b.acqType === 'borrow' && b.acqDueDate ? (b.acqReturnedAt
+              ? '<button class="btn btn--soft" data-unreturn type="button">반납 취소</button>'
+              : '<button class="btn" data-return type="button">📕 반납 완료</button>') : ''}
             <button class="btn btn--icon" data-menu type="button" title="더보기">⋯</button>
           </div>
         </div>
@@ -114,6 +117,13 @@ export default function bookView({ id }) {
         acq.place,
         b.acqDate ? fmtDate(b.acqDate) : '',
       ].filter(Boolean).join(' · ')]);
+
+      if (acq.type === 'borrow' && b.acqDueDate) {
+        info.splice(7, 0, ['반납', b.acqReturnedAt
+          ? `${fmtDate(b.acqReturnedAt)}에 반납함`
+          : `${fmtDate(b.acqDueDate)}까지 (${dueWord(store.loansDue({ withinDays: 3650 })
+              .find((r) => r.book.id === b.id)?.daysLeft ?? 0)})`]);
+      }
     }
 
     return `
@@ -270,6 +280,15 @@ export default function bookView({ id }) {
     go(`#/book/${id}`, { replace: true });
   });
   on(root, 'click', '[data-progress]', () => openProgressDialog(store.getBook(id)));
+
+  on(root, 'click', '[data-return]', async () => {
+    await store.updateBook(id, { acqReturnedAt: new Date().toISOString().slice(0, 10) });
+    toast('반납한 것으로 표시했어요.');
+  });
+  on(root, 'click', '[data-unreturn]', async () => {
+    await store.updateBook(id, { acqReturnedAt: '' });
+    toast('반납 표시를 지웠어요.');
+  });
 
   // 표지 — 어느 쪽을 대표로 쓸지
   on(root, 'click', '[data-pref]', async (e, t) => {

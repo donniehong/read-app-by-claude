@@ -86,6 +86,14 @@ export function fmtRelative(v) {
   return fmtDate(v);
 }
 
+/** 반납까지 남은 날을 사람 말로 */
+export function dueWord(daysLeft) {
+  if (daysLeft < 0) return `${Math.abs(daysLeft)}일 지남`;
+  if (daysLeft === 0) return '오늘까지';
+  if (daysLeft === 1) return '내일까지';
+  return `${daysLeft}일 남음`;
+}
+
 /** 분 → '1시간 20분' */
 export function fmtMinutes(min) {
   const m = Math.max(0, Math.round(min || 0));

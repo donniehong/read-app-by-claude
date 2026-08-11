@@ -38,7 +38,7 @@ export async function seedDemo() {
     startedAt: D(12),
     categories: ['역사', '인문'],
     tags: ['통찰'],
-    acqType: 'borrow', acqPlace: '동네 시립도서관', acqDate: D(14),
+    acqType: 'borrow', acqPlace: '동네 시립도서관', acqDate: D(14), acqDueDate: D(-3),
   });
 
   const almond = await store.addBook({
@@ -53,7 +53,8 @@ export async function seedDemo() {
     finishedAt: D(16),
     categories: ['소설'],
     oneLine: '감정을 모르는 아이가, 감정을 배우는 이야기.',
-    acqType: 'borrow', acqPlace: '동네 시립도서관', acqDate: D(22),
+    acqType: 'borrow', acqPlace: '동네 시립도서관', acqDate: D(22), acqDueDate: D(8),
+    acqReturnedAt: D(15),
   });
 
   await store.addBook({
@@ -76,7 +77,7 @@ export async function seedDemo() {
     status: 'want',
     priority: 1,
     categories: ['과학'],
-    acqType: 'borrow', acqPlace: '회사 도서관', acqDate: D(3),
+    acqType: 'borrow', acqPlace: '회사 도서관', acqDate: D(3), acqDueDate: D(-11),
   });
 
   /* 문장 · 메모 · 실천 */

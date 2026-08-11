@@ -3,7 +3,7 @@
 // 화면 역할을 갈라 같은 값이 두 번 나오지 않게 한다.
 //   지표 줄 = 지금 상태 / 히어로 = 목표와 페이스 / 잔디 = 습관
 
-import { el, esc, ymd, fmtDate, nfmt, sum, seededRandom, startOfWeek, addDays, on } from '../util.js';
+import { el, esc, ymd, fmtDate, nfmt, sum, seededRandom, startOfWeek, addDays, dueWord, on } from '../util.js';
 import * as store from '../store.js';
 import { coverHTML, toast } from '../ui.js';
 import { heatmap } from '../charts.js';
@@ -287,6 +287,23 @@ export default function homeView() {
       }).join('')}
     </div>` : '';
 
+  /* ---------- 반납 임박 ---------- */
+  const due = store.loansDue({ withinDays: 7 });
+  const dueBlock = due.length ? `
+    <div class="duebar ${due.some((r) => r.overdue) ? 'is-late' : ''}">
+      <span class="duebar__ic">${due.some((r) => r.overdue) ? '⚠️' : '⏰'}</span>
+      <div class="duebar__body">
+        <div class="duebar__t">${due.some((r) => r.overdue) ? '반납일이 지난 책이 있어요' : '곧 반납할 책이 있어요'}</div>
+        <div class="duebar__list">
+          ${due.slice(0, 4).map((r) => `
+            <button class="duebar__item" data-book="${esc(r.book.id)}" type="button">
+              ${esc(r.book.title)} <b>${esc(dueWord(r.daysLeft))}</b>
+              ${r.book.acqPlace ? `<span class="faint">· ${esc(r.book.acqPlace)}</span>` : ''}
+            </button>`).join('')}
+        </div>
+      </div>
+    </div>` : '';
+
   /* ---------- 조립 ---------- */
   const root = el(`
     <div>
@@ -297,6 +314,8 @@ export default function homeView() {
             : '오늘 한 쪽이라도 읽어 볼까요?'}</small>
         </h1>
       </div>
+
+      ${dueBlock}
 
       <div class="kpis">${kpis}</div>
 
@@ -334,7 +353,10 @@ export default function homeView() {
 
   /* ---------- 이벤트 ---------- */
   on(root, 'click', '[data-book]', (e, t) => {
-    if (e.target.closest('button')) return;
+    // 카드 안의 버튼(타이머·진도 등)을 누른 것은 이동이 아니다.
+    // 다만 항목 자체가 버튼인 경우(반납 알림)는 눌러서 이동하는 게 맞다.
+    const btn = e.target.closest('button');
+    if (btn && btn !== t && t.contains(btn)) return;
     go(`#/book/${t.dataset.book}`);
   });
   on(root, 'click', '[data-goto]', (e, t) => go(t.dataset.goto));

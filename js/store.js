@@ -138,6 +138,8 @@ export function newBook(data = {}) {
     acqType: '',        // '' 미지정 | 'purchase' 구매 | 'borrow' 대출
     acqPlace: '',       // 구매처 또는 빌린 곳
     acqDate: '',        // 구매일 / 대출일 (비어 있으면 서재에 담은 날로 본다)
+    acqDueDate: '',     // 반납 예정일 (대출일 때만)
+    acqReturnedAt: '',  // 반납한 날 (비어 있으면 아직 갖고 있는 것)
     priority: 1,        // 0 낮음 / 1 보통 / 2 높음
     readCount: 0,
     addedAt: now,
@@ -454,6 +456,29 @@ export function acquisitionPlaces(type) {
   }
   return [...seen.entries()].sort((x, y) => y[1] - x[1]).map(([place]) => place);
 }
+
+/**
+ * 반납할 책 목록. 기한이 가까운 순으로 돌려준다.
+ * @param {{withinDays?: number}} opts  기한이 이만큼 남은 것까지 포함 (지난 것은 항상 포함)
+ * @returns {{book:object, due:string, daysLeft:number, overdue:boolean}[]}
+ */
+export function loansDue({ withinDays = 7 } = {}) {
+  const today = ymd();
+  return state.books
+    .filter((b) => b.acqType === 'borrow' && b.acqDueDate && !b.acqReturnedAt)
+    .map((b) => {
+      const daysLeft = Math.round(
+        (new Date(`${b.acqDueDate}T00:00:00`) - new Date(`${today}T00:00:00`)) / 86400000,
+      );
+      return { book: b, due: b.acqDueDate, daysLeft, overdue: daysLeft < 0 };
+    })
+    .filter((r) => r.daysLeft <= withinDays)
+    .sort((a, b) => a.daysLeft - b.daysLeft);
+}
+
+/** 아직 반납하지 않고 갖고 있는 대출 책 수 */
+export const loansOut = () =>
+  state.books.filter((b) => b.acqType === 'borrow' && !b.acqReturnedAt).length;
 
 /**
  * 구매/대출 통계.

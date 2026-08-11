@@ -1,6 +1,6 @@
 // 책 추가/수정, 노트 편집, 진도 업데이트, 완독 회고 다이얼로그
 
-import { el, esc, ymd, debounce, clamp } from './util.js';
+import { el, esc, ymd, addDays, parseYmd, debounce, clamp } from './util.js';
 import * as store from './store.js';
 import { searchBooks, searchByIsbn, canScanBarcode } from './search.js';
 import { modal, toast, confirmDialog, coverHTML, fieldHTML, parseList, ratingInput } from './ui.js';
@@ -213,6 +213,10 @@ export function openBookForm({ draft = null, book = null } = {}) {
           <label id="bfAcqDateLabel">구매일 · 대출일</label>
           <input class="input" id="bfAcqDate" type="date" value="${esc(b.acqDate || '')}">
         </div>
+        <div class="field" id="bfDueWrap" hidden>
+          <label>반납 예정일</label>
+          <input class="input" id="bfAcqDue" type="date" value="${esc(b.acqDueDate || '')}">
+        </div>
       </div>
       <div class="row">
         ${fieldHTML('태그', `<input class="input" id="bfTags" value="${esc((b.tags || []).join(', '))}" placeholder="자기계발, 재독하고싶은…">`)}
@@ -238,6 +242,8 @@ export function openBookForm({ draft = null, book = null } = {}) {
       const acqType = box.querySelector('#bfAcqType');
       const acqPlace = box.querySelector('#bfAcqPlace');
       const acqDate = box.querySelector('#bfAcqDate');
+      const acqDue = box.querySelector('#bfAcqDue');
+      const dueWrap = box.querySelector('#bfDueWrap');
       const placeLabel = box.querySelector('#bfAcqPlaceLabel');
       const dateLabel = box.querySelector('#bfAcqDateLabel');
       const places = box.querySelector('#bfPlaces');
@@ -254,7 +260,18 @@ export function openBookForm({ draft = null, book = null } = {}) {
           .map((x) => `<option value="${esc(x)}"></option>`).join('');
         // 직접 고른 경우에만 날짜를 오늘로 채워 준다 (기존 기록을 건드리지 않도록)
         if (userChanged && on && !acqDate.value) acqDate.value = ymd();
+
+        dueWrap.hidden = t !== 'borrow';
+        // 흔한 대출 기간이 2주라 기본값으로 채워 두되, 언제든 고칠 수 있다
+        if (userChanged && t === 'borrow' && !acqDue.value) {
+          acqDue.value = ymd(addDays(acqDate.value ? parseYmd(acqDate.value) : new Date(), 14));
+        }
       };
+      acqDate.addEventListener('change', () => {
+        if (acqType.value === 'borrow' && !acqDue.value && acqDate.value) {
+          acqDue.value = ymd(addDays(parseYmd(acqDate.value), 14));
+        }
+      });
       acqType.addEventListener('change', () => syncAcq({ userChanged: true }));
       syncAcq();
 
@@ -284,6 +301,7 @@ export function openBookForm({ draft = null, book = null } = {}) {
           acqType: v('#bfAcqType'),
           acqPlace: v('#bfAcqType') ? v('#bfAcqPlace') : '',
           acqDate: v('#bfAcqType') ? v('#bfAcqDate') : '',
+          acqDueDate: v('#bfAcqType') === 'borrow' ? v('#bfAcqDue') : '',
         };
         if (patch.status === 'reading' && !patch.startedAt) patch.startedAt = ymd();
         if (patch.status === 'done' && !patch.finishedAt) patch.finishedAt = ymd();
