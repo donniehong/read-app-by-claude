@@ -87,10 +87,7 @@ export default function settingsView() {
       <section class="section">
         <div class="section__head"><h2>데이터</h2></div>
         <div class="card" style="padding:16px">
-          <p class="tiny muted" style="margin-bottom:14px" id="stWhere">
-            모든 기록은 이 브라우저 안에만 저장돼요 (서버 없음).
-            기기를 옮기거나 백업하려면 아래에서 파일로 내보내세요.
-          </p>
+          <p class="tiny muted" style="margin-bottom:14px" id="stWhere"></p>
           <p class="tiny faint" style="margin-bottom:14px">
             현재 책 ${nfmt(counts.books)}권 · 기록 ${nfmt(counts.notes)}개 · 독서 세션 ${nfmt(counts.sessions)}회
             ${photo.count ? ` · 사진 ${nfmt(photo.count)}장 (${fmtBytes(photo.bytes)})` : ''}
@@ -297,19 +294,27 @@ export default function settingsView() {
   }
 
   renderSync();
-  const offSync = sync.subscribe(() => { if (root.isConnected) renderSync(); });
+  const offSync = sync.subscribe(() => { if (root.isConnected) { renderSync(); paintWhere(); } });
   // 화면이 사라지면 구독도 거둔다
   new MutationObserver((_, ob) => {
     if (!root.isConnected) { offSync(); ob.disconnect(); }
   }).observe(document.body, { childList: true, subtree: true });
 
-  if (sync.status().signedIn) {
-    root.querySelector('#stWhere').innerHTML = `
-      기기 간 이동은 위쪽 동기화가 알아서 합니다. 여기 있는 건 <b>안전 사본</b>이에요.
-      동기화는 실수까지 그대로 옮기기 때문에 — 잘못 지운 책은 다른 기기에서도 사라집니다 —
-      되돌릴 지점이 필요하면 가끔 내보내 두세요.
-      되살리기(가져오기)를 하면 다음 동기화 때 클라우드에도 함께 반영됩니다.`;
-  }
+  // 기록이 어디에 있는지는 동기화를 켰는지에 따라 달라진다. 한 곳에서 함께 관리한다.
+  const whereText = (linked) => (linked
+    ? `기기 간 이동은 위쪽 <b>동기화</b>가 알아서 합니다. 여기 있는 건 <b>되돌릴 지점</b>이에요.
+       동기화는 실수까지 그대로 옮기기 때문에 — 잘못 지운 책은 다른 기기와 클라우드에서도 사라집니다 —
+       가끔 내보내 두시면 그 시점으로 되살릴 수 있어요.
+       되살리기(가져오기)를 하면 다음 동기화 때 다른 기기에도 함께 반영됩니다.`
+    : `기록은 지금 <b>이 기기 안에만</b> 있어요.
+       다른 기기에서도 같이 보시려면 위쪽 <b>기기 간 동기화</b>를 켜세요.
+       아래 내보내기는 <b>되돌릴 지점</b>을 만드는 일입니다 —
+       브라우저 데이터를 지우거나 실수로 지웠을 때 파일에서 되살립니다.`);
+
+  const paintWhere = () => {
+    root.querySelector('#stWhere').innerHTML = whereText(sync.status().signedIn);
+  };
+  paintWhere();
 
   /* ---- 목표 ---- */
   root.querySelector('#stSaveGoal').onclick = async () => {
