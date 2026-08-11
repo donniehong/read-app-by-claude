@@ -15,6 +15,7 @@ export default function statsView() {
   const years = [...new Set([
     ...books.filter((b) => b.finishedAt).map((b) => Number(b.finishedAt.slice(0, 4))),
     ...sessions.map((s) => Number(s.date.slice(0, 4))),
+    ...books.map((b) => Number(store.acquisitionOf(b).date.slice(0, 4))),
     new Date().getFullYear(),
   ])].filter(Boolean).sort((a, b) => b - a);
 
@@ -70,6 +71,7 @@ export default function statsView() {
     .map((b) => ({ book: b, days: Math.max(1, daysBetween(b.startedAt, b.finishedAt) + 1) }));
   const avgSpan = spans.length ? Math.round(sum(spans, (s) => s.days) / spans.length) : null;
 
+  const acq = store.acquisitionSummary({ year: Y });
   const goal = store.goal(Y);
   const goalPct = goal.books ? Math.min(100, Math.round((doneY.length / goal.books) * 100)) : 0;
 
@@ -151,6 +153,55 @@ export default function statsView() {
           </div>
         </section>
       </div>
+
+      <section class="section" style="margin-top:26px">
+        <div class="section__head"><h2>어디서 온 책인가</h2>
+          <span class="muted tiny">${Y}년 기준 · 서재에 담은 날</span></div>
+        <div class="card" style="padding:16px">
+          ${acq.period.purchase + acq.period.borrow === 0 ? `
+            <p class="muted tiny">아직 구매·대출을 적어 두지 않았어요.
+              책 정보 수정에서 <b>어디서 온 책</b>을 골라 두면 여기에 쌓입니다.</p>
+          ` : `
+            <div class="acq-split">
+              <div class="acq-cell">
+                <div class="acq-cell__v mono">${acq.period.purchase}<small>권</small></div>
+                <div class="acq-cell__k">🛒 구매</div>
+              </div>
+              <div class="acq-cell">
+                <div class="acq-cell__v mono">${acq.period.borrow}<small>권</small></div>
+                <div class="acq-cell__k">🏛 대출</div>
+              </div>
+              <div class="acq-cell">
+                <div class="acq-cell__v mono">${acq.period.purchase + acq.period.borrow
+                  ? Math.round((acq.period.borrow / (acq.period.purchase + acq.period.borrow)) * 100) : 0}<small>%</small></div>
+                <div class="acq-cell__k">대출 비중</div>
+              </div>
+            </div>
+            <div class="acq-bar" title="구매 ${acq.period.purchase}권 · 대출 ${acq.period.borrow}권">
+              <i class="buy" style="width:${(acq.period.purchase / Math.max(1, acq.period.purchase + acq.period.borrow)) * 100}%"></i>
+              <i class="lend" style="width:${(acq.period.borrow / Math.max(1, acq.period.purchase + acq.period.borrow)) * 100}%"></i>
+            </div>
+            <p class="tiny faint" style="margin-top:10px">
+              누적(전체 기간) 구매 <b>${nfmt(acq.lifetime.purchase)}</b>권 ·
+              대출 <b>${nfmt(acq.lifetime.borrow)}</b>권${
+                acq.period.none ? ` · ${Y}년 미지정 ${acq.period.none}권` : ''}
+            </p>
+          `}
+        </div>
+
+        ${acq.places.length ? `
+          <div class="card" style="padding:8px 16px;margin-top:12px">
+            <div class="tiny faint" style="padding:10px 0 4px;font-weight:800">자주 간 곳 · ${Y}년</div>
+            ${acq.places.slice(0, 8).map((r, i) => `
+              <div class="rank-row">
+                <span class="n">${i + 1}</span>
+                <span class="badge badge--${r.type === 'purchase' ? 'want' : 'reading'}"
+                      style="flex:0 0 auto">${r.type === 'purchase' ? '구매' : '대출'}</span>
+                <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.place)}</span>
+                <span class="v">${r.value}권</span>
+              </div>`).join('')}
+          </div>` : ''}
+      </section>
 
       ${doneY.length ? `
       <section class="section" style="margin-top:26px">

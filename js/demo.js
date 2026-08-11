@@ -21,6 +21,7 @@ export async function seedDemo() {
     finishedAt: D(31),
     categories: ['자기계발'],
     tags: ['습관', '재독하고싶은'],
+    acqType: 'purchase', acqPlace: '교보문고', acqDate: D(50),
     oneLine: '습관은 의지의 문제가 아니라 설계의 문제다.',
     review: '작게 시작하라는 말은 흔하지만, 이 책은 “왜” 작아야 하는지를 시스템으로 설명한다.\n환경을 바꾸는 것이 결심을 다지는 것보다 훨씬 강력하다는 점이 오래 남았다.',
     rereadIntent: true,
@@ -37,6 +38,7 @@ export async function seedDemo() {
     startedAt: D(12),
     categories: ['역사', '인문'],
     tags: ['통찰'],
+    acqType: 'borrow', acqPlace: '동네 시립도서관', acqDate: D(14),
   });
 
   const almond = await store.addBook({
@@ -51,6 +53,7 @@ export async function seedDemo() {
     finishedAt: D(16),
     categories: ['소설'],
     oneLine: '감정을 모르는 아이가, 감정을 배우는 이야기.',
+    acqType: 'borrow', acqPlace: '동네 시립도서관', acqDate: D(22),
   });
 
   await store.addBook({
@@ -62,6 +65,7 @@ export async function seedDemo() {
     priority: 2,
     categories: ['에세이'],
     tags: ['위로'],
+    acqType: 'purchase', acqPlace: '동네 책방 위로', acqDate: D(6),
   });
 
   await store.addBook({
@@ -72,6 +76,7 @@ export async function seedDemo() {
     status: 'want',
     priority: 1,
     categories: ['과학'],
+    acqType: 'borrow', acqPlace: '회사 도서관', acqDate: D(3),
   });
 
   /* 문장 · 메모 · 실천 */

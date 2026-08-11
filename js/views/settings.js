@@ -223,10 +223,12 @@ export default function settingsView() {
   /* ---- CSV ---- */
   root.querySelector('#stCsv').onclick = () => {
     const cell = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
-    const head = ['제목', '저자', '출판사', '상태', '별점', '전체쪽수', '현재쪽', '시작일', '완독일', '한줄평', '태그'];
+    const head = ['제목', '저자', '출판사', '상태', '별점', '전체쪽수', '현재쪽', '시작일', '완독일',
+      '입수', '구매처/빌린곳', '구매일/대출일', '한줄평', '태그'];
     const rows = store.books().map((b) => [
       b.title, (b.authors || []).join(' / '), b.publisher, store.STATUS[b.status] || b.status,
       b.rating || '', b.pageCount || '', b.currentPage || '', b.startedAt, b.finishedAt,
+      store.ACQUISITION[b.acqType]?.label || '', b.acqPlace || '', b.acqDate || '',
       b.oneLine, (b.tags || []).join(' / '),
     ].map(cell).join(','));
     const csv = '﻿' + [head.map(cell).join(','), ...rows].join('\r\n');

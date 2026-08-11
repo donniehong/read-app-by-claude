@@ -199,6 +199,22 @@ export function openBookForm({ draft = null, book = null } = {}) {
         ${fieldHTML('완독일', `<input class="input" id="bfFinish" type="date" value="${esc(b.finishedAt)}">`)}
       </div>
       <div class="row">
+        ${fieldHTML('어디서 온 책', `<select class="select" id="bfAcqType">
+          <option value="" ${!b.acqType ? 'selected' : ''}>미지정</option>
+          <option value="purchase" ${b.acqType === 'purchase' ? 'selected' : ''}>구매</option>
+          <option value="borrow" ${b.acqType === 'borrow' ? 'selected' : ''}>대출</option>
+        </select>`)}
+        <div class="field">
+          <label id="bfAcqPlaceLabel">구매처 · 빌린 곳</label>
+          <input class="input" id="bfAcqPlace" list="bfPlaces" value="${esc(b.acqPlace || '')}" autocomplete="off">
+          <datalist id="bfPlaces"></datalist>
+        </div>
+        <div class="field">
+          <label id="bfAcqDateLabel">구매일 · 대출일</label>
+          <input class="input" id="bfAcqDate" type="date" value="${esc(b.acqDate || '')}">
+        </div>
+      </div>
+      <div class="row">
         ${fieldHTML('태그', `<input class="input" id="bfTags" value="${esc((b.tags || []).join(', '))}" placeholder="자기계발, 재독하고싶은…">`)}
         ${fieldHTML('읽고 싶은 정도', `<select class="select" id="bfPriority">
           <option value="2" ${b.priority === 2 ? 'selected' : ''}>높음 — 다음에 읽을 책</option>
@@ -217,6 +233,30 @@ export function openBookForm({ draft = null, book = null } = {}) {
     foot: `<button class="btn btn--primary" data-save type="button">${editing ? '저장' : '서재에 담기'}</button>`,
     onMount(box, close) {
       const v = (id) => box.querySelector(id).value.trim();
+
+      // 구매/대출 선택에 따라 옆 칸의 성격이 달라진다
+      const acqType = box.querySelector('#bfAcqType');
+      const acqPlace = box.querySelector('#bfAcqPlace');
+      const acqDate = box.querySelector('#bfAcqDate');
+      const placeLabel = box.querySelector('#bfAcqPlaceLabel');
+      const dateLabel = box.querySelector('#bfAcqDateLabel');
+      const places = box.querySelector('#bfPlaces');
+
+      const syncAcq = ({ userChanged = false } = {}) => {
+        const t = acqType.value;
+        const meta = store.ACQUISITION[t];
+        const on = !!meta;
+        [acqPlace, acqDate].forEach((f) => { f.disabled = !on; });
+        placeLabel.textContent = meta ? meta.placeLabel : '구매처 · 빌린 곳';
+        dateLabel.textContent = t === 'borrow' ? '대출일' : t === 'purchase' ? '구매일' : '구매일 · 대출일';
+        acqPlace.placeholder = meta ? meta.ph : '먼저 구매인지 대출인지 골라 주세요';
+        places.innerHTML = store.acquisitionPlaces(t)
+          .map((x) => `<option value="${esc(x)}"></option>`).join('');
+        // 직접 고른 경우에만 날짜를 오늘로 채워 준다 (기존 기록을 건드리지 않도록)
+        if (userChanged && on && !acqDate.value) acqDate.value = ymd();
+      };
+      acqType.addEventListener('change', () => syncAcq({ userChanged: true }));
+      syncAcq();
 
       // 표지 주소를 바꾸면 미리보기 갱신
       box.querySelector('#bfCover').addEventListener('change', (e) => {
@@ -241,6 +281,9 @@ export function openBookForm({ draft = null, book = null } = {}) {
           priority: Number(v('#bfPriority')),
           cover: v('#bfCover'),
           isbn: v('#bfIsbn'),
+          acqType: v('#bfAcqType'),
+          acqPlace: v('#bfAcqType') ? v('#bfAcqPlace') : '',
+          acqDate: v('#bfAcqType') ? v('#bfAcqDate') : '',
         };
         if (patch.status === 'reading' && !patch.startedAt) patch.startedAt = ymd();
         if (patch.status === 'done' && !patch.finishedAt) patch.finishedAt = ymd();

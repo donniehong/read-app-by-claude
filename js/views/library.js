@@ -75,7 +75,8 @@ export default function libraryView(params = {}) {
       if (uiState.tag && !(b.tags || []).includes(uiState.tag)) return false;
       if (!q) return true;
       const hay = [b.title, b.subtitle, (b.authors || []).join(' '), b.publisher,
-        (b.tags || []).join(' '), (b.categories || []).join(' ')].join(' ').toLowerCase();
+        (b.tags || []).join(' '), (b.categories || []).join(' '),
+        b.acqPlace || ''].join(' ').toLowerCase();
       return hay.includes(q);
     });
     rows = rows.sort(SORTS[uiState.sort]?.fn || SORTS.recent.fn);

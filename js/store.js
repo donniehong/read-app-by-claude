@@ -12,6 +12,12 @@ export const STATUS = {
 };
 export const STATUS_ORDER = ['reading', 'want', 'done', 'paused', 'dropped'];
 
+/** 이 책이 어디서 왔는지 */
+export const ACQUISITION = {
+  purchase: { label: '구매', placeLabel: '구매처', ph: '예: 교보문고, 알라딘, 동네서점' },
+  borrow:   { label: '대출', placeLabel: '빌린 곳', ph: '예: 시립도서관, 학교도서관' },
+};
+
 export const NOTE_TYPES = {
   quote:  { label: '인용', icon: '❝' },
   memo:   { label: '메모', icon: '✎' },
@@ -129,6 +135,9 @@ export function newBook(data = {}) {
     currentPage: 0,
     tags: [],
     favorite: false,
+    acqType: '',        // '' 미지정 | 'purchase' 구매 | 'borrow' 대출
+    acqPlace: '',       // 구매처 또는 빌린 곳
+    acqDate: '',        // 구매일 / 대출일 (비어 있으면 서재에 담은 날로 본다)
     priority: 1,        // 0 낮음 / 1 보통 / 2 높음
     readCount: 0,
     addedAt: now,
@@ -421,6 +430,60 @@ export function streak() {
     prev = d;
   }
   return { current: cur, best };
+}
+
+/* ---------- 입수 경로 집계 ---------- */
+
+/** 날짜가 비어 있으면 서재에 담은 날을 대신 쓴다 */
+export function acquisitionOf(book) {
+  return {
+    type: book.acqType || '',
+    place: (book.acqPlace || '').trim(),
+    date: book.acqDate || String(book.addedAt || '').slice(0, 10),
+  };
+}
+
+/** 서재에 이미 적어 둔 장소들 (입력 자동완성용) */
+export function acquisitionPlaces(type) {
+  const seen = new Map();
+  for (const b of state.books) {
+    const a = acquisitionOf(b);
+    if (!a.place) continue;
+    if (type && a.type !== type) continue;
+    seen.set(a.place, (seen.get(a.place) || 0) + 1);
+  }
+  return [...seen.entries()].sort((x, y) => y[1] - x[1]).map(([place]) => place);
+}
+
+/**
+ * 구매/대출 통계.
+ * @param {{year?: number|null}} opts  year 를 주면 그 해만, 없으면 전체
+ */
+export function acquisitionSummary({ year = null } = {}) {
+  const all = state.books.map(acquisitionOf);
+  const inYear = year ? all.filter((a) => a.date.startsWith(String(year))) : all;
+
+  const tally = (rows) => ({
+    purchase: rows.filter((a) => a.type === 'purchase').length,
+    borrow: rows.filter((a) => a.type === 'borrow').length,
+    none: rows.filter((a) => !a.type).length,
+    total: rows.length,
+  });
+
+  const byPlace = new Map();
+  for (const a of inYear) {
+    if (!a.type || !a.place) continue;
+    const key = `${a.type}\u0000${a.place}`;
+    byPlace.set(key, (byPlace.get(key) || 0) + 1);
+  }
+  const places = [...byPlace.entries()]
+    .map(([key, value]) => {
+      const [type, place] = key.split('\u0000');
+      return { type, place, value };
+    })
+    .sort((x, y) => y.value - x.value);
+
+  return { period: tally(inYear), lifetime: tally(all), places };
 }
 
 /* ---------- 백업 / 복원 ---------- */

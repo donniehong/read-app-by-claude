@@ -106,6 +106,16 @@ export default function bookView({ id }) {
       ['ISBN', b.isbn || '—'],
     ];
 
+    const acq = store.acquisitionOf(b);
+    if (acq.type) {
+      const meta = store.ACQUISITION[acq.type];
+      info.splice(6, 0, ['입수', [
+        meta.label,
+        acq.place,
+        b.acqDate ? fmtDate(b.acqDate) : '',
+      ].filter(Boolean).join(' · ')]);
+    }
+
     return `
       ${b.oneLine || b.review || b.rating ? `
       <section class="section">
