@@ -1,6 +1,7 @@
 // 인용 카드 이미지 생성 — 문장을 이미지로 저장해 공유
 
 import { el, esc, downloadBlob } from './util.js';
+import { APP_NAME } from './brand.js';
 import { modal, toast } from './ui.js';
 
 const THEMES = [
@@ -110,7 +111,7 @@ export function draw(canvas, { text, title, authors, page, themeId, ratioId }) {
   ctx.fillStyle = theme.sub + '99';
   ctx.font = `600 ${Math.round(W * 0.021)}px ${FONT_SANS}`;
   ctx.textAlign = 'right';
-  ctx.fillText('책갈피', W - inner, baseY + Math.round(W * 0.045));
+  ctx.fillText(APP_NAME, W - inner, baseY + Math.round(W * 0.045));
   ctx.textAlign = 'left';
 }
 

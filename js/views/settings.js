@@ -9,6 +9,7 @@ import { fmtBytes } from '../image.js';
 import { applyTheme } from '../theme.js';
 import { seedDemo } from '../demo.js';
 import { go } from '../router.js';
+import { APP_NAME } from '../brand.js';
 
 export default function settingsView() {
   const st = store.settings();
@@ -120,7 +121,7 @@ export default function settingsView() {
         </div>
       </section>
 
-      <p class="tiny faint" style="text-align:center;margin-top:30px">책갈피 · 오프라인에서도 동작하는 개인 독서기록</p>
+      <p class="tiny faint" style="text-align:center;margin-top:30px">${APP_NAME} · 오프라인에서도 동작하는 개인 독서기록</p>
     </div>`);
 
   /* ---- 기기 간 동기화 ---- */
@@ -379,7 +380,7 @@ export default function settingsView() {
     try {
       const data = await store.exportData({ includePhotos: true });
       const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
-      downloadBlob(blob, `책갈피_백업_${ymd()}.json`);
+      downloadBlob(blob, `${APP_NAME}_백업_${ymd()}.json`);
       toast(`백업을 내려받았어요 (${fmtBytes(blob.size)})`);
     } catch (err) {
       toast(`백업에 실패했어요: ${err.message}`);
@@ -424,7 +425,7 @@ export default function settingsView() {
       b.oneLine, (b.tags || []).join(' / '),
     ].map(cell).join(','));
     const csv = '﻿' + [head.map(cell).join(','), ...rows].join('\r\n');
-    downloadBlob(new Blob([csv], { type: 'text/csv;charset=utf-8' }), `책갈피_서재_${ymd()}.csv`);
+    downloadBlob(new Blob([csv], { type: 'text/csv;charset=utf-8' }), `${APP_NAME}_서재_${ymd()}.csv`);
     toast('CSV를 내려받았어요.');
   };
 

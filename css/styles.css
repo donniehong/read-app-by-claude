@@ -1,23 +1,23 @@
 /* ============================================================
-   책갈피 — 독서기록 앱
+   독서기록 앱
    디자인 방향: 밝고 둥근 큰 카드(모바일 앱) + 상단 지표 줄(대시보드)
    ============================================================ */
 
-/* 색: 도서관 램프갓 같은 세이지 그린.
-   채도를 낮춰 은은하게 두되, 글자를 얹는 --accent 는 흰 글씨가 읽힐 만큼은 어둡게 잡았다. */
+/* 색: 피스타치오 — 노랑이 살짝 섞인 밝은 연두.
+   면은 전부 단색 무광으로 칠한다. 그라데이션과 번지는 그림자가 화면을 번들거리게 만든다. */
 :root {
-  --bg:          #f1f5f2;
+  --bg:          #f5faf3;
   --bg-elev:     #ffffff;
-  --bg-sunk:     #e7eee9;
-  --line:        #dde8e1;
-  --line-soft:   #edf3ef;
-  --text:        #1a241f;
-  --text-dim:    #5d6e65;
-  --text-faint:  #94a69b;
+  --bg-sunk:     #e9f4e7;
+  --line:        #dfeedd;
+  --line-soft:   #eef6ec;
+  --text:        #18231a;
+  --text-dim:    #5f6f61;
+  --text-faint:  #96a897;
 
-  --accent:      #4a7c64;
-  --accent-2:    #7fae95;
-  --accent-soft: #e6f0ea;
+  --accent:      #5c9c5c;
+  --accent-2:    #93c98d;
+  --accent-soft: #ecf6ea;
   --accent-ink:  #ffffff;
 
   /* 완독(ok)은 accent 와 같은 초록 가족이라, 조금 더 청록 쪽으로 밀어 구분한다 */
@@ -49,19 +49,19 @@
 }
 
 html[data-theme="dark"] {
-  --bg:          #121815;
-  --bg-elev:     #1b231e;
-  --bg-sunk:     #253029;
-  --line:        #32403a;
-  --line-soft:   #253029;
-  --text:        #e8f0ea;
-  --text-dim:    #a2b3a8;
-  --text-faint:  #71857a;
+  --bg:          #141a13;
+  --bg-elev:     #1d241c;
+  --bg-sunk:     #283126;
+  --line:        #354034;
+  --line-soft:   #283126;
+  --text:        #e9f0e7;
+  --text-dim:    #a5b3a2;
+  --text-faint:  #74856f;
 
-  --accent:      #7fb499;
-  --accent-2:    #a6cfb7;
-  --accent-soft: #23342b;
-  --accent-ink:  #0f1712;
+  --accent:      #8cc687;
+  --accent-2:    #b0dcaa;
+  --accent-soft: #253526;
+  --accent-ink:  #10190f;
 
   --ok:          #4ecab1;
   --ok-soft:     #143330;
@@ -177,7 +177,7 @@ input[type="search"]::-webkit-search-cancel-button { -webkit-appearance: none; }
 .btn:active { transform: translateY(1px); }
 .btn--primary {
   background: var(--accent); color: var(--accent-ink);
-  box-shadow: 0 6px 16px color-mix(in srgb, var(--accent) 32%, transparent);
+  box-shadow: var(--shadow-sm);
 }
 .btn--soft { background: var(--bg-sunk); box-shadow: none; color: var(--text-dim); }
 .btn--ghost { background: transparent; box-shadow: none; color: var(--text-dim); }
@@ -251,7 +251,7 @@ input[type="search"]::-webkit-search-cancel-button { -webkit-appearance: none; }
 .progress { height: 10px; border-radius: 10px; background: var(--bg-sunk); overflow: hidden; position: relative; }
 .progress > i {
   display: block; height: 100%; border-radius: 10px;
-  background: linear-gradient(90deg, var(--accent), var(--accent-2)); transition: width .3s;
+  background: var(--accent); transition: width .3s;
 }
 .progress__pace { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--text-faint); border-radius: 2px; }
 
@@ -310,15 +310,12 @@ input[type="search"]::-webkit-search-cancel-button { -webkit-appearance: none; }
 @media (min-width: 900px) { .grid2 { grid-template-columns: 1.25fr 1fr; gap: 24px; align-items: start; } }
 
 .hero {
-  /* 흰 글씨를 얹으므로 밝은 끝도 너무 밝게 두지 않는다 */
-  background: linear-gradient(135deg, #33675a, #47795f 55%, #5f9a7e);
+  background: var(--accent);
   border-radius: 28px; padding: 22px; color: #fff; margin-bottom: 14px;
   position: relative; overflow: hidden;
 }
-/* 밤에는 한 단 더 가라앉힌다 — 어두운 화면에서 이 카드만 뜨면 눈이 아프다 */
-html[data-theme="dark"] .hero {
-  background: linear-gradient(135deg, #1c4638, #275445 55%, #3a7160);
-}
+/* 밤에는 한 단 가라앉힌다 — 어두운 화면에서 이 카드만 뜨면 눈이 아프다 */
+html[data-theme="dark"] .hero { background: #3f7342; }
 .hero::after {
   content: ""; position: absolute; right: -40px; top: -50px; width: 190px; height: 190px;
   border-radius: 50%; background: rgba(255, 255, 255, .13);
@@ -328,12 +325,12 @@ html[data-theme="dark"] .hero {
   border-radius: 50%; background: rgba(255, 255, 255, .10);
 }
 .hero > * { position: relative; }
-.hero__lb { font-size: 12.5px; font-weight: 800; opacity: .92; }
+.hero__lb { font-size: 12.5px; font-weight: 800; }
 .hero__big { font-size: 34px; font-weight: 800; letter-spacing: -.045em; margin: 6px 0 2px; }
-.hero__sub { font-size: 13.5px; opacity: .93; }
+.hero__sub { font-size: 13.5px; }
 .hero__track { height: 9px; border-radius: 9px; background: rgba(255, 255, 255, .28); margin-top: 16px; overflow: hidden; }
 .hero__track i { display: block; height: 100%; background: #fff; border-radius: 9px; }
-.hero__foot { display: flex; margin-top: 10px; font-size: 12.5px; font-weight: 700; opacity: .95; }
+.hero__foot { display: flex; margin-top: 10px; font-size: 12.5px; font-weight: 700; }
 .hero__btn {
   margin-top: 16px; background: rgba(255, 255, 255, .2); color: #fff;
   border: 0; border-radius: 12px; padding: 10px 16px; font-weight: 800; cursor: pointer; font-size: 13.5px;
@@ -512,7 +509,7 @@ html[data-theme="dark"] .hero {
 .bar-col { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 5px; }
 .bar-col__v { font-size: 11px; font-weight: 800; color: var(--text-dim); height: 14px; line-height: 14px; font-variant-numeric: tabular-nums; }
 .bar-col__track { width: 100%; display: flex; align-items: flex-end; background: var(--bg-sunk); border-radius: 8px; overflow: hidden; }
-.bar-col__track > i { display: block; width: 100%; background: linear-gradient(180deg, var(--accent-2), var(--accent)); border-radius: 8px; transition: height .3s; }
+.bar-col__track > i { display: block; width: 100%; background: var(--accent); border-radius: 8px; transition: height .3s; }
 .bar-col__l { font-size: 11px; color: var(--text-faint); font-weight: 700; white-space: nowrap; }
 @media (max-width: 520px) { .barchart { gap: 3px; } .bar-col__v, .bar-col__l { font-size: 9.5px; } }
 

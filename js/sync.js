@@ -7,12 +7,13 @@
 // 우리가 쓰는 기능이 네 가지뿐이라 라이브러리를 들일 이유가 없다.
 
 import * as store from './store.js';
+import { APP_NAME } from './brand.js';
 
 const BUCKET = 'photos';
 const PAGE = 500;
 
 /** Supabase 프로젝트에서 한 번만 실행하면 되는 준비용 SQL */
-export const SETUP_SQL = `-- 책갈피 동기화 준비 (한 번만 실행하면 됩니다)
+export const SETUP_SQL = `-- ${APP_NAME} 동기화 준비 (한 번만 실행하면 됩니다)
 
 create table if not exists public.records (
   user_id    uuid        not null references auth.users on delete cascade,
