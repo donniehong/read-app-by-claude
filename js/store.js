@@ -829,10 +829,7 @@ export async function exportData({ includePhotos = true } = {}) {
 export async function importData(data, mode = 'merge') {
   if (!data || !Array.isArray(data.books)) throw new Error('형식이 올바르지 않은 백업 파일입니다.');
 
-  if (mode === 'replace') {
-    await db.clearAll();
-    state.books = []; state.notes = []; state.sessions = []; state.meta = [];
-  }
+  if (mode === 'replace') await wipeAll();
 
   const idMap = new Map();
   const bookKey = (b) => (b.isbn || `${b.title}|${(b.authors || [])[0] || ''}`).trim();
@@ -910,8 +907,14 @@ export async function importData(data, mode = 'merge') {
   };
 }
 
-export async function resetAll() {
-  // 동기화를 쓰는 중이라면 '지웠다'는 사실도 남겨야 한다. 안 그러면 다음 동기화 때 도로 내려온다.
+/**
+ * 서재를 비운다. 초기화와 '덮어쓰기 가져오기'가 함께 쓴다.
+ *
+ * 그냥 지우면 두 가지가 잘못된다.
+ *  - 로그인 정보까지 날아가 조용히 로그아웃된다 (백업 파일에는 로그인 정보가 없다)
+ *  - 지웠다는 사실이 안 남아, 클라우드의 옛 기록이 다음 동기화 때 도로 내려온다
+ */
+async function wipeAll() {
   const tombs = [
     ...state.books.map((b) => ({ kind: 'books', id: b.id })),
     ...state.notes.map((n) => ({ kind: 'notes', id: n.id })),
@@ -926,5 +929,9 @@ export async function resetAll() {
 
   if (keepSync) { await db.put('meta', keepSync); upsertMeta(keepSync); }
   for (const t of tombs) await bury(t.kind, t.id);
+}
+
+export async function resetAll() {
+  await wipeAll();
   emit('reset');
 }

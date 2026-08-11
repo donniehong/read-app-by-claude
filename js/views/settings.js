@@ -305,8 +305,10 @@ export default function settingsView() {
 
   if (sync.status().signedIn) {
     root.querySelector('#stWhere').innerHTML = `
-      기록은 이 기기에 저장되고, 로그인한 계정을 통해 다른 기기와 맞춰져요.
-      파일 백업은 그와 별개로 언제든 내려받을 수 있습니다.`;
+      기기 간 이동은 위쪽 동기화가 알아서 합니다. 여기 있는 건 <b>안전 사본</b>이에요.
+      동기화는 실수까지 그대로 옮기기 때문에 — 잘못 지운 책은 다른 기기에서도 사라집니다 —
+      되돌릴 지점이 필요하면 가끔 내보내 두세요.
+      되살리기(가져오기)를 하면 다음 동기화 때 클라우드에도 함께 반영됩니다.`;
   }
 
   /* ---- 목표 ---- */
@@ -396,9 +398,13 @@ export default function settingsView() {
     try {
       const data = JSON.parse(await file.text());
       if (mode === 'replace') {
+        const linked = sync.status().signedIn;
         const ok = await confirmDialog({
           title: '덮어쓰기',
-          message: '지금 저장된 모든 기록을 지우고 파일 내용으로 교체해요. 되돌릴 수 없습니다.',
+          message: linked
+            ? '지금 저장된 모든 기록을 지우고 파일 내용으로 교체해요. '
+              + '동기화를 쓰는 중이라 다음 동기화 때 다른 기기와 클라우드에도 그대로 반영됩니다. 되돌릴 수 없습니다.'
+            : '지금 저장된 모든 기록을 지우고 파일 내용으로 교체해요. 되돌릴 수 없습니다.',
           okText: '덮어쓰기', danger: true,
         });
         if (!ok) return;
@@ -443,9 +449,13 @@ export default function settingsView() {
   };
 
   root.querySelector('#stReset').onclick = async () => {
+    const linked = sync.status().signedIn;
     const ok = await confirmDialog({
       title: '전체 초기화',
-      message: '모든 책, 문장, 독서 기록이 영구히 삭제돼요. 먼저 백업을 내보내는 걸 권해요.',
+      message: linked
+        ? '모든 책, 문장, 독서 기록이 영구히 삭제돼요. 동기화를 쓰는 중이라 '
+          + '다른 기기와 클라우드에서도 함께 사라집니다. 먼저 백업을 내보내는 걸 권해요.'
+        : '모든 책, 문장, 독서 기록이 영구히 삭제돼요. 먼저 백업을 내보내는 걸 권해요.',
       okText: '전부 삭제', danger: true,
     });
     if (!ok) return;
