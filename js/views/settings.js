@@ -1,8 +1,9 @@
 // 설정 — 목표 · 테마 · 검색 공급자 · 백업/복원 · 샘플 데이터
 
-import { el, esc, on, ymd, downloadBlob, pickFile, nfmt } from '../util.js';
+import { el, esc, on, ymd, downloadBlob, pickFile, nfmt, fmtRelative } from '../util.js';
 import * as store from '../store.js';
-import { toast, confirmDialog, fieldHTML } from '../ui.js';
+import * as sync from '../sync.js';
+import { toast, confirmDialog, fieldHTML, modal } from '../ui.js';
 import { testProvider } from '../search.js';
 import { fmtBytes } from '../image.js';
 import { applyTheme } from '../theme.js';
@@ -78,9 +79,14 @@ export default function settingsView() {
       </section>
 
       <section class="section">
+        <div class="section__head"><h2>기기 간 동기화</h2></div>
+        <div class="card" style="padding:16px" id="stSync"></div>
+      </section>
+
+      <section class="section">
         <div class="section__head"><h2>데이터</h2></div>
         <div class="card" style="padding:16px">
-          <p class="tiny muted" style="margin-bottom:14px">
+          <p class="tiny muted" style="margin-bottom:14px" id="stWhere">
             모든 기록은 이 브라우저 안에만 저장돼요 (서버 없음).
             기기를 옮기거나 백업하려면 아래에서 파일로 내보내세요.
           </p>
@@ -116,6 +122,191 @@ export default function settingsView() {
 
       <p class="tiny faint" style="text-align:center;margin-top:30px">책갈피 · 오프라인에서도 동작하는 개인 독서기록</p>
     </div>`);
+
+  /* ---- 기기 간 동기화 ---- */
+  const syncBox = root.querySelector('#stSync');
+
+  const STEPS = [
+    ['supabase.com 에서 무료 계정을 만들고 <b>New project</b> 를 누르세요.',
+     '이름과 비밀번호는 아무거나 좋아요. 지역은 <b>Northeast Asia (Seoul)</b> 이 가장 빠릅니다. 만드는 데 1~2분 걸려요.'],
+    ['왼쪽 메뉴 <b>SQL Editor</b> 에서 아래 SQL 을 붙여넣고 <b>Run</b> 을 누르세요.',
+     '기록을 담을 표와 사진 보관함을 만들고, 남이 내 기록을 못 보게 잠그는 작업입니다. 한 번만 하면 돼요.'],
+    ['<b>Authentication → Sign In / Providers → Email</b> 에서 <b>Confirm email</b> 을 꺼 주세요.',
+     '끄지 않으면 계정을 만든 뒤 메일함의 확인 링크를 눌러야 로그인됩니다. 어느 쪽이든 괜찮아요.'],
+    ['<b>Project Settings → API</b> 에서 <b>Project URL</b> 과 <b>anon public</b> 키를 복사해 이 화면에 붙여넣으세요.',
+     'anon 키는 원래 공개되는 키입니다. 실제 잠금은 위 SQL 의 규칙이 하고, 로그인한 본인 기록만 열립니다. <b>service_role</b> 키는 절대 넣지 마세요.'],
+  ];
+
+  function openSyncHelp() {
+    const { root: box } = modal({
+      title: '동기화 준비 (한 번만)',
+      wide: true,
+      body: `
+        <ol style="margin:0;padding-left:20px;display:flex;flex-direction:column;gap:14px">
+          ${STEPS.map(([h, d]) => `<li><div style="font-weight:700;font-size:14px">${h}</div>
+            <div class="tiny muted" style="margin-top:4px">${d}</div></li>`).join('')}
+        </ol>
+        <div style="margin-top:16px">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+            <b style="font-size:13px">붙여넣을 SQL</b>
+            <button class="btn btn--sm" id="syCopy" type="button" style="margin-left:auto">복사</button>
+          </div>
+          <pre style="margin:0;max-height:240px;overflow:auto;background:var(--bg-sunk);border-radius:12px;padding:12px;font-size:11.5px;line-height:1.5;white-space:pre">${esc(sync.SETUP_SQL)}</pre>
+        </div>`,
+    });
+    box.querySelector('#syCopy').onclick = async (e) => {
+      try {
+        await navigator.clipboard.writeText(sync.SETUP_SQL);
+        e.currentTarget.textContent = '복사됨';
+      } catch {
+        toast('복사가 막혀 있어요. SQL 을 직접 선택해 복사해 주세요.');
+      }
+    };
+  }
+
+  const noteHTML = (msg, kind = 'dim') => (msg
+    ? `<p class="tiny" style="margin-top:10px;color:var(--${kind})">${esc(msg)}</p>` : '');
+
+  function renderSync() {
+    const s = store.syncState();
+    const st2 = sync.status();
+    const pending = store.pendingCount();
+
+    if (!st2.configured) {
+      syncBox.innerHTML = `
+        <p class="tiny muted" style="margin-bottom:14px">
+          PC와 휴대폰이 <b>같은 기록</b>을 보게 하려면 기록을 놓아둘 곳이 하나 필요해요.
+          무료 Supabase 프로젝트를 쓰며, 준비는 처음 한 번뿐입니다.
+        </p>
+        <div style="display:flex;flex-direction:column;gap:12px">
+          ${fieldHTML('프로젝트 주소', '<input class="input" id="syUrl" placeholder="https://xxxxxxxx.supabase.co" autocomplete="off">')}
+          ${fieldHTML('anon public 키', '<input class="input" id="syKey" placeholder="eyJ... 로 시작하는 긴 문자열" autocomplete="off">')}
+        </div>
+        <div class="chips" style="margin-top:14px">
+          <button class="btn btn--primary btn--sm" id="syCheck" type="button">연결 확인</button>
+          <button class="btn btn--sm" id="syHelp" type="button">준비 방법 보기</button>
+        </div>
+        <div id="syOut"></div>`;
+      syncBox.querySelector('#syHelp').onclick = () => openSyncHelp();
+      syncBox.querySelector('#syCheck').onclick = async (e) => {
+        const btn = e.currentTarget;
+        const url = syncBox.querySelector('#syUrl').value.trim();
+        const anonKey = syncBox.querySelector('#syKey').value.trim();
+        const out = syncBox.querySelector('#syOut');
+        btn.disabled = true;
+        out.innerHTML = noteHTML('프로젝트에 연결해 보는 중…', 'text-dim');
+        try {
+          await sync.testConnection({ url, anonKey });
+          await store.saveSyncState({ url: url.replace(/\/+$/, ''), anonKey });
+          toast('프로젝트에 연결됐어요. 이제 로그인해 주세요.');
+          renderSync();
+        } catch (err) {
+          btn.disabled = false;
+          out.innerHTML = noteHTML(`❌ ${err.message}`, 'danger');
+        }
+      };
+      return;
+    }
+
+    if (!st2.signedIn) {
+      const host = s.url.replace(/^https?:\/\//, '');
+      syncBox.innerHTML = `
+        <p class="tiny faint" style="margin-bottom:14px">창고: ${esc(host)}</p>
+        <div style="display:flex;flex-direction:column;gap:12px">
+          ${fieldHTML('이메일', `<input class="input" id="syEmail" type="email" value="${esc(s.email)}" autocomplete="username">`)}
+          ${fieldHTML('비밀번호', '<input class="input" id="syPw" type="password" autocomplete="current-password">')}
+        </div>
+        <div class="chips" style="margin-top:14px">
+          <button class="btn btn--primary btn--sm" id="syIn" type="button">로그인</button>
+          <button class="btn btn--sm" id="syUp" type="button">계정 만들기</button>
+          <button class="btn btn--sm btn--ghost" id="syForget" type="button">주소·키 다시 넣기</button>
+        </div>
+        <p class="tiny faint" style="margin-top:10px">
+          이 계정은 내 Supabase 프로젝트에만 있는 계정이에요. 다른 기기에서도 같은 이메일로 로그인하면 기록이 합쳐집니다.
+        </p>
+        <div id="syOut"></div>`;
+
+      const go2 = async (mode, btn) => {
+        const out = syncBox.querySelector('#syOut');
+        btn.disabled = true;
+        out.innerHTML = noteHTML(mode === 'signUp' ? '계정을 만드는 중…' : '로그인하는 중…', 'text-dim');
+        try {
+          await sync.signIn({
+            url: s.url, anonKey: s.anonKey,
+            email: syncBox.querySelector('#syEmail').value.trim(),
+            password: syncBox.querySelector('#syPw').value,
+            mode,
+          });
+          toast('로그인했어요. 첫 동기화를 시작합니다.');
+          renderSync();
+          sync.syncNow();
+        } catch (err) {
+          btn.disabled = false;
+          out.innerHTML = noteHTML(`❌ ${err.message}`, 'danger');
+        }
+      };
+      syncBox.querySelector('#syIn').onclick = (e) => go2('signIn', e.currentTarget);
+      syncBox.querySelector('#syUp').onclick = (e) => go2('signUp', e.currentTarget);
+      syncBox.querySelector('#syForget').onclick = async () => {
+        await store.saveSyncState({ url: '', anonKey: '' });
+        renderSync();
+      };
+      return;
+    }
+
+    const when = st2.lastSyncAt ? fmtRelative(st2.lastSyncAt) : '아직 없음';
+    syncBox.innerHTML = `
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <span class="badge badge--done">연결됨</span>
+        <b style="font-size:14px">${esc(st2.email)}</b>
+      </div>
+      <p class="tiny faint" style="margin-top:8px">
+        마지막 동기화 ${esc(when)}${pending ? ` · 올릴 것 ${nfmt(pending)}건` : ' · 모두 올라감'}
+      </p>
+      <div class="chips" style="margin-top:14px">
+        <button class="btn btn--primary btn--sm" id="syNow" type="button" ${st2.running ? 'disabled' : ''}>
+          ${st2.running ? '동기화 중…' : '지금 동기화'}</button>
+        <button class="btn btn--sm btn--ghost" id="syOut2" type="button">이 기기에서 로그아웃</button>
+      </div>
+      ${noteHTML(st2.error ? `❌ ${st2.error}` : '', 'danger')}
+      <p class="tiny faint" style="margin-top:10px">
+        책·문장·독서기록·연간 목표와 사진이 오갑니다. 테마 같은 화면 설정은 기기마다 따로예요.
+      </p>`;
+
+    syncBox.querySelector('#syNow').onclick = async () => {
+      const r = await sync.syncNow();
+      renderSync();
+      if (sync.status().error) return;
+      const bits = [];
+      if (r.pulled) bits.push(`받은 것 ${r.pulled}건`);
+      if (r.pushed) bits.push(`보낸 것 ${r.pushed}건`);
+      if (r.photosUp || r.photosDown) bits.push(`사진 ${r.photosUp + r.photosDown}장`);
+      toast(bits.length ? `동기화 완료 — ${bits.join(' · ')}` : '이미 최신이에요.');
+    };
+    syncBox.querySelector('#syOut2').onclick = async () => {
+      const ok = await confirmDialog({
+        title: '로그아웃',
+        message: '이 기기의 기록은 그대로 남아요. 다시 로그인하면 이어서 동기화됩니다.',
+        okText: '로그아웃',
+      });
+      if (!ok) return;
+      await sync.signOut();
+      renderSync();
+    };
+  }
+
+  renderSync();
+  const offSync = sync.subscribe(() => { if (root.isConnected) renderSync(); });
+  // 화면이 사라지면 구독도 거둔다
+  new MutationObserver((_, ob) => {
+    if (!root.isConnected) { offSync(); ob.disconnect(); }
+  }).observe(document.body, { childList: true, subtree: true });
+
+  if (sync.status().signedIn) {
+    root.querySelector('#stWhere').innerHTML = `
+      기록은 이 기기에 저장되고, 로그인한 계정을 통해 다른 기기와 맞춰져요.
+      파일 백업은 그와 별개로 언제든 내려받을 수 있습니다.`;
+  }
 
   /* ---- 목표 ---- */
   root.querySelector('#stSaveGoal').onclick = async () => {

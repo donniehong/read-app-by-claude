@@ -7,6 +7,7 @@ import { route, match, start, go, currentPathname, setCurrent } from './router.j
 import { toast, modalOpen, hydrateImages } from './ui.js';
 import { openAddBook, openNoteEditor } from './dialogs.js';
 import * as timer from './timer.js';
+import * as sync from './sync.js';
 
 import homeView from './views/home.js';
 import libraryView, { setQuery } from './views/library.js';
@@ -149,13 +150,14 @@ function wireChrome() {
   // (설정 화면은 자기 상태를 직접 반영하고, 다른 화면은 이동할 때 새로 그려진다)
   let pending = null;
   store.subscribe((kind) => {
-    if (kind === 'settings' || kind === 'goal') return;
+    if (kind === 'settings' || kind === 'goal' || kind === 'sync-state') return;
     clearTimeout(pending);
     pending = setTimeout(render, 30);
   });
 
   start(render);
   timer.render();
+  sync.start();
 
   // 서비스 워커 (오프라인 지원) — file:// 로 열면 등록되지 않는다
   if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {

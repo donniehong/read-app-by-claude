@@ -1,6 +1,6 @@
 // 서비스 워커 — 앱 셸 캐시로 오프라인 지원
 
-const CACHE = 'chaekgalpi-v1';
+const CACHE = 'chaekgalpi-v2';
 
 const SHELL = [
   './',
@@ -22,6 +22,10 @@ const SHELL = [
   './js/quotecard.js',
   './js/dialogs.js',
   './js/demo.js',
+  './js/sync.js',
+  './js/image.js',
+  './js/photonote.js',
+  './js/ocr.js',
   './js/views/home.js',
   './js/views/library.js',
   './js/views/book.js',

@@ -40,8 +40,15 @@ const state = {
   notes: [],
   sessions: [],
   meta: [],
+  graves: [],
   loaded: false,
 };
+
+// 동기화는 '누가 더 나중에 고쳤나'로 판정한다. 모든 쓰기가 이 도장을 찍는다.
+// dirty 는 '아직 클라우드에 못 올렸다'는 표시다. 시각만 보고 판단하면
+// 방금 내려받은 기록을 도로 올려 보내는 왕복이 생긴다.
+const nowIso = () => new Date().toISOString();
+const stamp = (obj) => { obj.updatedAt = nowIso(); obj.dirty = true; return obj; };
 
 const listeners = new Set();
 
@@ -57,13 +64,15 @@ function emit(kind = 'change') {
 }
 
 export async function load() {
-  const [books, notes, sessions, meta] = await Promise.all([
-    db.getAll('books'), db.getAll('notes'), db.getAll('sessions'), db.getAll('meta'),
+  const [books, notes, sessions, meta, graves] = await Promise.all([
+    db.getAll('books'), db.getAll('notes'), db.getAll('sessions'),
+    db.getAll('meta'), db.getAll('graves'),
   ]);
   state.books = books;
   state.notes = notes;
   state.sessions = sessions;
   state.meta = meta;
+  state.graves = graves;
   state.loaded = true;
   emit('load');
 }
@@ -83,7 +92,7 @@ export function settings() {
   return { ...DEFAULT_SETTINGS, ...(s || {}) };
 }
 export async function saveSettings(patch) {
-  const next = { ...settings(), ...patch, id: 'settings' };
+  const next = stamp({ ...settings(), ...patch, id: 'settings' });
   await db.put('meta', next);
   upsertMeta(next);
   emit('settings');
@@ -96,7 +105,7 @@ export function goal(year = new Date().getFullYear()) {
   return g || { id: `goal:${year}`, year, books: 0, pages: 0, minutes: 0 };
 }
 export async function saveGoal(year, patch) {
-  const next = { ...goal(year), ...patch, id: `goal:${year}`, year };
+  const next = stamp({ ...goal(year), ...patch, id: `goal:${year}`, year });
   await db.put('meta', next);
   upsertMeta(next);
   emit('goal');
@@ -144,6 +153,7 @@ export function newBook(data = {}) {
     readCount: 0,
     addedAt: now,
     updatedAt: now,
+    dirty: true,       // 아직 클라우드에 못 올렸다는 표시
     ...data,
   };
 }
@@ -161,7 +171,7 @@ export async function addBook(data) {
 export async function updateBook(id, patch) {
   const b = getBook(id);
   if (!b) return null;
-  Object.assign(b, patch, { updatedAt: new Date().toISOString() });
+  stamp(Object.assign(b, patch));
   await db.put('books', b);
   emit('books');
   return b;
@@ -186,6 +196,8 @@ export async function setStatus(id, status) {
 
 export async function removeBook(id) {
   const target = getBook(id);
+  const deadNotes = notesOf(id).map((n) => n.id);
+  const deadSessions = sessionsOf(id).map((s) => s.id);
   if (target?.photo?.id) await deleteImage(target.photo.id);
   for (const n of notesOf(id)) {
     if (n.photo?.id) await deleteImage(n.photo.id);
@@ -196,6 +208,9 @@ export async function removeBook(id) {
   await db.del('books', id);
   await db.delWhere('notes', (n) => n.bookId === id);
   await db.delWhere('sessions', (s) => s.bookId === id);
+  await bury('books', id);
+  for (const nid of deadNotes) await bury('notes', nid);
+  for (const sid of deadSessions) await bury('sessions', sid);
   emit('books');
 }
 
@@ -221,9 +236,10 @@ export async function addNote(data) {
     done: false,
     recallCount: 0,
     lastRecalledAt: '',
-    createdAt: new Date().toISOString(),
+    createdAt: nowIso(),
     ...data,
   };
+  stamp(n);
   state.notes.push(n);
   await db.put('notes', n);
   emit('notes');
@@ -232,7 +248,7 @@ export async function addNote(data) {
 export async function updateNote(id, patch) {
   const n = state.notes.find((x) => x.id === id);
   if (!n) return null;
-  Object.assign(n, patch);
+  stamp(Object.assign(n, patch));
   await db.put('notes', n);
   emit('notes');
   return n;
@@ -242,6 +258,7 @@ export async function removeNote(id) {
   if (target?.photo?.id) await deleteImage(target.photo.id);
   state.notes = state.notes.filter((n) => n.id !== id);
   await db.del('notes', id);
+  await bury('notes', id);
   emit('notes');
 }
 
@@ -251,14 +268,15 @@ export async function addSession(data) {
     id: uid(),
     bookId: '',
     date: ymd(),
-    startedAt: new Date().toISOString(),
-    endedAt: new Date().toISOString(),
+    startedAt: nowIso(),
+    endedAt: nowIso(),
     minutes: 0,
     startPage: null,
     endPage: null,
     memo: '',
     ...data,
   };
+  stamp(s);
   state.sessions.push(s);
   await db.put('sessions', s);
 
@@ -285,7 +303,7 @@ export async function addSession(data) {
 export async function updateSession(id, patch) {
   const s = state.sessions.find((x) => x.id === id);
   if (!s) return null;
-  Object.assign(s, patch);
+  stamp(Object.assign(s, patch));
   await db.put('sessions', s);
   emit('sessions');
   return s;
@@ -293,6 +311,7 @@ export async function updateSession(id, patch) {
 export async function removeSession(id) {
   state.sessions = state.sessions.filter((s) => s.id !== id);
   await db.del('sessions', id);
+  await bury('sessions', id);
   emit('sessions');
 }
 
@@ -302,7 +321,8 @@ const imageCache = new Map();
 
 /** @returns {Promise<{id:string, bytes:number, w:number, h:number}>} */
 export async function saveImage({ dataUrl, bytes, w, h }) {
-  const rec = { id: uid(), dataUrl, bytes, w, h, createdAt: new Date().toISOString() };
+  // uploaded: 이 기기가 사진을 클라우드에 올렸는지. 올리기 전까지는 여기에만 있다.
+  const rec = stamp({ id: uid(), dataUrl, bytes, w, h, createdAt: nowIso(), uploaded: false });
   await db.put('images', rec);
   imageCache.set(rec.id, dataUrl);
   return { id: rec.id, bytes, w, h };
@@ -322,6 +342,25 @@ export async function deleteImage(id) {
   if (!id) return;
   imageCache.delete(id);
   await db.del('images', id);
+  await bury('images', id);
+}
+
+/* ---------- 삭제 기록(묘비) ---------- */
+// 지운 기록을 그냥 없애면 다른 기기가 그 사실을 모르고 되돌려 보낸다.
+// 그래서 '언제 무엇을 지웠는지'만 따로 남긴다.
+async function bury(kind, id, { at = nowIso(), dirty = true } = {}) {
+  const g = { id: `${kind}:${id}`, kind, recId: id, at, dirty };
+  state.graves = state.graves.filter((x) => x.id !== g.id).concat(g);
+  await db.put('graves', g);
+}
+export const graves = () => state.graves;
+
+/** 클라우드에도 반영이 끝난 묘비 — 표시만 지운다 */
+export async function clearGrave(id) {
+  const g = state.graves.find((x) => x.id === id);
+  if (!g || !g.dirty) return;
+  g.dirty = false;
+  await db.put('graves', { ...g });
 }
 
 /** 저장된 사진의 장수와 대략적인 용량 — 목록 데이터만으로 계산한다 */
@@ -511,6 +550,174 @@ export function acquisitionSummary({ year = null } = {}) {
   return { period: tally(inYear), lifetime: tally(all), places };
 }
 
+/* ---------- 기기 간 동기화 ---------- */
+// 무엇을 클라우드에 올릴지: 책·문장·독서기록과 연간 목표까지.
+// 기기 설정(테마, 화면 방식)과 로그인 정보는 그 기기의 것이므로 올리지 않는다.
+const SYNCED_KINDS = ['books', 'notes', 'sessions', 'meta'];
+const syncableMeta = (m) => /^goal:/.test(m.id);
+
+/** 로그인 정보와 동기화 진행 상태 — 이 기기에만 남는다 */
+export function syncState() {
+  const s = state.meta.find((m) => m.id === 'sync');
+  return {
+    id: 'sync',
+    url: '', anonKey: '', email: '',
+    accessToken: '', refreshToken: '', expiresAt: 0, userId: '',
+    cursor: '', lastSyncAt: '',
+    ...(s || {}),
+  };
+}
+export async function saveSyncState(patch) {
+  const next = { ...syncState(), ...patch, id: 'sync' };
+  await db.put('meta', next);
+  upsertMeta(next);
+  emit('sync-state');
+  return next;
+}
+
+/** 아직 클라우드에 올리지 못한 것들 (삭제 기록 포함) */
+export function syncableRecords() {
+  const rows = [];
+  const add = (kind, r) => {
+    if (!r.dirty) return;
+    rows.push({
+      kind, recId: r.id, deleted: false,
+      updatedAt: r.updatedAt || r.addedAt || r.createdAt || '1970-01-01T00:00:00.000Z',
+      data: r,
+    });
+  };
+  for (const b of state.books) add('books', b);
+  for (const n of state.notes) add('notes', n);
+  for (const s of state.sessions) add('sessions', s);
+  for (const m of state.meta) if (syncableMeta(m)) add('meta', m);
+  for (const g of state.graves) {
+    if (g.kind === 'images' || !g.dirty) continue;  // 사진은 보관함에서 따로 지운다
+    rows.push({ kind: g.kind, recId: g.recId, deleted: true, updatedAt: g.at, data: null });
+  }
+  return rows;
+}
+
+/** 올리기가 끝난 것들의 '아직 안 올림' 표시를 지운다 */
+export async function clearDirty(rows) {
+  const byKind = { books: [], notes: [], sessions: [], meta: [] };
+  const tombs = [];
+  for (const row of rows) {
+    if (row.deleted) {
+      const g = state.graves.find((x) => x.kind === row.kind && x.recId === row.recId);
+      if (g && g.at === row.updatedAt) { g.dirty = false; tombs.push({ ...g }); }
+      continue;
+    }
+    const list = listFor(row.kind);
+    const rec = list?.find((r) => r.id === row.recId);
+    // 올리는 사이에 또 고쳤다면 그대로 두고 다음 차례에 올린다
+    if (!rec || rec.updatedAt !== row.updatedAt) continue;
+    rec.dirty = false;
+    byKind[row.kind].push(rec);
+  }
+  for (const kind of SYNCED_KINDS) {
+    if (byKind[kind].length) await db.putMany(kind, byKind[kind]);
+  }
+  if (tombs.length) await db.putMany('graves', tombs);
+}
+
+/** 아직 못 올린 건수 — 설정 화면에 보여 준다 */
+export function pendingCount() {
+  return syncableRecords().length;
+}
+
+const listFor = (kind) => (
+  kind === 'books' ? state.books
+  : kind === 'notes' ? state.notes
+  : kind === 'sessions' ? state.sessions
+  : kind === 'meta' ? state.meta
+  : null
+);
+
+/**
+ * 클라우드에서 받은 것을 이 기기에 반영한다.
+ * 같은 기록이 양쪽에서 바뀌었으면 나중에 고친 쪽이 이긴다.
+ * @returns {Promise<number>} 실제로 바뀐 건수
+ */
+export async function applyRemote(rows) {
+  const writes = { books: [], notes: [], sessions: [], meta: [] };
+  const drops = [];
+  let changed = 0;
+
+  for (const row of rows) {
+    const list = listFor(row.kind);
+    if (!list) continue;
+    if (row.kind === 'meta' && !syncableMeta({ id: row.recId })) continue;
+
+    const mine = list.find((r) => r.id === row.recId);
+    const mineAt = mine?.updatedAt || mine?.addedAt || mine?.createdAt || '';
+    const buried = state.graves.find((g) => g.kind === row.kind && g.recId === row.recId);
+
+    if (row.deleted) {
+      if (!mine) continue;
+      if (mineAt && mineAt > row.updatedAt) continue;   // 지운 뒤에 내가 다시 고쳤다
+      drops.push({ kind: row.kind, id: row.recId, at: row.updatedAt });
+      changed += 1;
+      continue;
+    }
+    if (buried && buried.at > row.updatedAt) continue;  // 내가 지운 게 더 나중이다
+    if (mine && mineAt >= row.updatedAt) continue;      // 내 것이 더 새것이거나 같다
+
+    const rec = { ...row.data, id: row.recId, updatedAt: row.updatedAt, dirty: false };
+    writes[row.kind].push(rec);
+    changed += 1;
+  }
+
+  for (const kind of SYNCED_KINDS) {
+    if (!writes[kind].length) continue;
+    await db.putMany(kind, writes[kind]);
+    const list = listFor(kind);
+    for (const rec of writes[kind]) {
+      const i = list.findIndex((r) => r.id === rec.id);
+      if (i >= 0) list[i] = rec; else list.push(rec);
+    }
+  }
+  for (const d of drops) {
+    await db.del(d.kind, d.id);
+    const list = listFor(d.kind);
+    const i = list.findIndex((r) => r.id === d.id);
+    if (i >= 0) list.splice(i, 1);
+    // 남의 삭제를 받아 적을 때도 묘비는 세운다 — 세 번째 기기에도 전해져야 한다.
+    // 시각은 원래 지운 시각 그대로 둔다. 지금 시각을 찍으면 서로 되쏘게 된다.
+    await bury(d.kind, d.id, { at: d.at, dirty: false });
+  }
+  if (changed) emit('sync');
+  return changed;
+}
+
+/* 사진 — 기록과 달리 보관함(Storage)에 따로 오간다 */
+export const imageRecord = (id) => db.get('images', id);
+
+/** 아직 클라우드에 올리지 않은 사진 */
+export async function imagesToUpload() {
+  const rows = await db.getAll('images');
+  return rows.filter((r) => !r.uploaded);
+}
+export async function markImageUploaded(id) {
+  const rec = await db.get('images', id);
+  if (!rec) return;
+  await db.put('images', { ...rec, uploaded: true });
+}
+/** 책·문장이 가리키는데 이 기기에 아직 없는 사진 */
+export async function missingImageIds() {
+  const want = new Set([
+    ...state.books.map((b) => b.photo?.id),
+    ...state.notes.map((n) => n.photo?.id),
+  ].filter(Boolean));
+  if (!want.size) return [];
+  const have = new Set((await db.getAll('images')).map((r) => r.id));
+  return [...want].filter((id) => !have.has(id));
+}
+export async function putImage(id, { dataUrl, bytes, w, h }) {
+  const rec = stamp({ id, dataUrl, bytes, w, h, createdAt: nowIso(), uploaded: true });
+  await db.put('images', rec);
+  imageCache.set(id, dataUrl);
+}
+
 /* ---------- 백업 / 복원 ---------- */
 /**
  * 백업 만들기. 사진은 용량이 크므로 포함 여부를 고를 수 있다.
@@ -535,7 +742,8 @@ export async function exportData({ includePhotos = true } = {}) {
     books: state.books,
     notes: state.notes,
     sessions: state.sessions,
-    meta: state.meta,
+    // 로그인 정보는 백업에 넣지 않는다 — 파일이 남에게 가면 곧 계정이 넘어간다
+    meta: state.meta.filter((m) => m.id !== 'sync'),
     images,
   };
 }
@@ -607,6 +815,8 @@ export async function importData(data, mode = 'merge') {
   };
   newBooks.forEach(relink);
   newNotes.forEach(relink);
+  // 가져온 것도 '방금 바뀐 기록'이어야 다음 동기화 때 다른 기기로 넘어간다
+  [...newBooks, ...newNotes, ...newSessions, ...newMeta].forEach(stamp);
   await db.putMany('images', newImages);
 
   await db.putMany('books', newBooks);
@@ -627,8 +837,20 @@ export async function importData(data, mode = 'merge') {
 }
 
 export async function resetAll() {
+  // 동기화를 쓰는 중이라면 '지웠다'는 사실도 남겨야 한다. 안 그러면 다음 동기화 때 도로 내려온다.
+  const tombs = [
+    ...state.books.map((b) => ({ kind: 'books', id: b.id })),
+    ...state.notes.map((n) => ({ kind: 'notes', id: n.id })),
+    ...state.sessions.map((s) => ({ kind: 'sessions', id: s.id })),
+    ...state.meta.filter(syncableMeta).map((m) => ({ kind: 'meta', id: m.id })),
+  ];
+  const keepSync = state.meta.find((m) => m.id === 'sync');
+
   await db.clearAll();
   imageCache.clear();
-  state.books = []; state.notes = []; state.sessions = []; state.meta = [];
+  state.books = []; state.notes = []; state.sessions = []; state.meta = []; state.graves = [];
+
+  if (keepSync) { await db.put('meta', keepSync); upsertMeta(keepSync); }
+  for (const t of tombs) await bury(t.kind, t.id);
   emit('reset');
 }

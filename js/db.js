@@ -1,9 +1,12 @@
-// IndexedDB 얇은 래퍼 — 저장소: books / notes / sessions / meta
+// IndexedDB 얇은 래퍼 — 저장소: books / notes / sessions / meta / images / graves
 // 브라우저가 IndexedDB를 막아둔 경우(사파리 프라이빗 등) localStorage로 자동 폴백한다.
+//
+// graves 는 '지웠다'는 사실만 남기는 묘비다. 지운 기록을 그냥 없애 버리면
+// 다른 기기가 그 사실을 알 길이 없어, 동기화할 때 지운 책이 되살아난다.
 
 const DB_NAME = 'chaekgalpi';
-const DB_VER  = 2;
-const STORES  = ['books', 'notes', 'sessions', 'meta', 'images'];
+const DB_VER  = 3;
+const STORES  = ['books', 'notes', 'sessions', 'meta', 'images', 'graves'];
 
 let dbp = null;
 let fallback = false;
