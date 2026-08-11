@@ -95,27 +95,46 @@ create policy "own photos" on storage.objects
 
 ## 4. 앱에 주소와 키 넣기
 
-Supabase 대시보드는 메뉴 이름과 위치가 종종 바뀝니다.
-**어느 메뉴에 있든 아래 두 가지를 찾으시면 됩니다.**
+왼쪽 아래 **톱니바퀴(Project Settings)** 를 누르면 `CONFIGURATION` · `INTEGRATIONS` · `BILLING`
+세 묶음이 나옵니다. **`API` 라는 메뉴는 없습니다.** 주소와 키가 서로 다른 곳에 있습니다.
 
-### ① 프로젝트 주소
+### ① 공개 키 — `CONFIGURATION` → **API Keys**
 
-`https://<영문숫자>.supabase.co` 형태의 주소입니다.
-왼쪽 아래 **Settings**(톱니바퀴) → **Data API** 에 있습니다. 예전 화면에서는 **API** 라는 이름이었습니다.
+들어가면 위쪽에 탭이 두 개 있습니다. 기본으로 열리는 **`Publishable and secret API keys`** 탭에서
+**Publishable key** 아래 `default` 줄의 값을 복사하세요. `sb_publishable_…` 로 시작합니다.
+(값 오른쪽 복사 아이콘을 누르면 됩니다.)
 
-### ② 공개 키
+Supabase 도 이 키 옆에 이렇게 적어 두었습니다 — *"This key is safe to be used in a browser
+if you have enabled Row Level Security (RLS)"*. 2번에서 건 규칙이 바로 그 RLS 입니다.
 
-**Settings → API Keys** 에 있습니다. 화면에 따라 두 종류 중 하나 또는 둘 다 보입니다.
+| 화면에서 보이는 것 | 이 앱에 넣나 |
+|---|---|
+| **Publishable key** — `sb_publishable_…` | ○ **이것을 넣으세요** |
+| **Secret keys** — `sb_secret_…` | ✗ 절대 안 됩니다 |
+| `Legacy anon, service_role API keys` 탭의 **anon** — `eyJ…` | △ 예전 방식. 이것도 동작합니다 |
+| 왼쪽 메뉴의 **JWT Keys** | ✗ 다른 것입니다. 건드리지 마세요 |
 
-| 화면에 보이는 이름 | 생김새 | 이 앱에 넣어도 되나 |
-|---|---|---|
-| **Publishable key** | `sb_publishable_…` | ○ 새 방식. 이걸 넣으세요 |
-| **anon** · **public** (Legacy API keys) | `eyJhbGciOi…` (아주 긴 문자열) | ○ 예전 방식. 이것도 그대로 됩니다 |
-| **Secret key** · **service_role** | `sb_secret_…` · `eyJ…` | ✗ **절대 넣지 마세요** |
+### ② 프로젝트 주소
 
-둘 중 **아무거나 하나면 됩니다.** `Publishable` 만 보이면 그것을, `anon public` 만 보이면 그것을 쓰세요.
+두 가지 방법 중 편한 쪽으로 하시면 됩니다.
 
-앱의 **설정 → 기기 간 동기화** 에 붙여넣고 **연결 확인** 을 누릅니다.
+**(가) `CONFIGURATION` → General 에서 만들기 (가장 확실함)**
+**Project ID** 값을 복사한 뒤 앞뒤를 붙입니다.
+
+```
+https://<Project ID>.supabase.co
+```
+
+예를 들어 Project ID 가 `durteyxchqhyrpkaokkv` 라면
+주소는 `https://durteyxchqhyrpkaokkv.supabase.co` 입니다.
+
+**(나) `INTEGRATIONS` → Data API 에서 복사**
+그 페이지의 **Project URL** 을 그대로 복사하면 됩니다.
+(이 메뉴는 `CONFIGURATION` 이 아니라 그 아래 `INTEGRATIONS` 묶음에 있습니다.)
+
+### ③ 앱에 붙여넣기
+
+앱의 **설정 → 기기 간 동기화** 에 주소와 키를 넣고 **연결 확인** 을 누릅니다.
 이어서 이메일과 비밀번호로 **계정 만들기** 를 누르면 끝입니다.
 
 > **왜 공개 키는 브라우저에 넣어도 되나요?**

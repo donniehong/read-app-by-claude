@@ -131,10 +131,13 @@ export default function settingsView() {
      '기록을 담을 표와 사진 보관함을 만들고, 남이 내 기록을 못 보게 잠그는 작업입니다. 한 번만 하면 돼요.'],
     ['<b>Authentication → Sign In / Providers → Email</b> 에서 <b>Confirm email</b> 을 꺼 주세요.',
      '끄지 않으면 계정을 만든 뒤 메일함의 확인 링크를 눌러야 로그인됩니다. 어느 쪽이든 괜찮아요.'],
-    ['<b>Settings → Data API</b> 에서 <b>프로젝트 주소</b>를, <b>Settings → API Keys</b> 에서 <b>공개 키</b>를 복사해 붙여넣으세요.',
-     '공개 키는 화면에 따라 <b>Publishable key</b>(sb_publishable_…) 또는 <b>anon public</b>(eyJ…) 으로 보입니다. 둘 중 아무거나 하나면 됩니다. '
-     + '메뉴 이름은 Supabase 가 종종 바꾸니 <b>API</b> 라는 낱말을 찾으세요. '
-     + '<b>Secret · service_role</b> 키는 모든 잠금을 무시하니 절대 넣지 마세요 (넣으면 앱이 막아 드립니다).'],
+    ['톱니바퀴(<b>Project Settings</b>) → <b>API Keys</b> 에서 <b>Publishable key</b>(sb_publishable_…) 를 복사해 아래에 붙여넣으세요.',
+     '기본으로 열리는 <b>Publishable and secret API keys</b> 탭의 <b>default</b> 줄입니다. '
+     + '<b>Secret keys</b>(sb_secret_…), <b>JWT Keys</b> 메뉴, <b>service_role</b> 은 넣으면 안 됩니다 — 넣으시면 앱이 막아 드려요. '
+     + '예전 방식인 <b>Legacy anon</b>(eyJ…) 탭의 키를 쓰셔도 동작합니다.'],
+    ['프로젝트 주소는 <b>General</b> 의 <b>Project ID</b> 앞뒤를 붙여 만드시면 가장 확실합니다.',
+     '<code>https://&lt;Project ID&gt;.supabase.co</code> 형태입니다. '
+     + '<b>INTEGRATIONS → Data API</b> 페이지의 <b>Project URL</b> 을 그대로 복사하셔도 같습니다.'],
   ];
 
   function openSyncHelp() {
