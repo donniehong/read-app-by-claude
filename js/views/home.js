@@ -143,8 +143,8 @@ export default function homeView() {
       spark: '',
     }),
     kpiHTML({
-      k: '읽은 분량', v: nfmt(totalPages), unit: '쪽',
-      delta: '기록된 전체',
+      k: '읽은 분량', v: store.kilopages().toFixed(1), unit: 'kp',
+      delta: `누적 ${nfmt(store.totalPages())}쪽`,
       spark: sparkHTML(weeklyTrend((from, to) => sum(
         sessions.filter((s) => { const d = new Date(s.date); return d >= from && d < to; }),
         (s) => (s.startPage != null && s.endPage != null && s.endPage > s.startPage) ? s.endPage - s.startPage : 0,

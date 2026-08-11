@@ -2,7 +2,7 @@
 
 import { el, esc, on, nfmt, sum, groupBy, daysBetween } from '../util.js';
 import * as store from '../store.js';
-import { barChart, donutChart, rankList, heatmap } from '../charts.js';
+import { barChart, donutChart, rankList, heatmap, radarChart } from '../charts.js';
 import { go } from '../router.js';
 
 const uiState = { year: new Date().getFullYear() };
@@ -71,6 +71,11 @@ export default function statsView() {
     .map((b) => ({ book: b, days: Math.max(1, daysBetween(b.startedAt, b.finishedAt) + 1) }));
   const avgSpan = spans.length ? Math.round(sum(spans, (s) => s.days) / spans.length) : null;
 
+  /* ---- 단위 세 가지 ---- */
+  const kp = store.kilopages();          // 누적 — 해가 바뀌어도 줄지 않는다
+  const bal = store.genreBalance();      // 전체 기간
+  const balY = store.genreBalance({ year: Y });
+
   const acq = store.acquisitionSummary({ year: Y });
   const goal = store.goal(Y);
   const goalPct = goal.books ? Math.min(100, Math.round((doneY.length / goal.books) * 100)) : 0;
@@ -94,9 +99,24 @@ export default function statsView() {
         <div class="progress"><i style="width:${goalPct}%"></i></div>
       </div>` : ''}
 
+      <div class="units">
+        <div class="unit">
+          <div class="unit__v mono">No.<b>${nfmt(store.accessionTotal())}</b></div>
+          <div class="unit__k">등록번호 · 완독한 책마다 한 번호</div>
+        </div>
+        <div class="unit">
+          <div class="unit__v mono"><b>${kp.toFixed(1)}</b>kp</div>
+          <div class="unit__k">누적 ${nfmt(store.totalPages())}쪽 · 1,000쪽이 1kp</div>
+        </div>
+        <div class="unit">
+          <div class="unit__v mono"><b>${bal.rows.filter((r) => r.value).length}</b><small>/6</small></div>
+          <div class="unit__k">부문 · ${bal.total ? `가장 얇은 쪽은 ${esc(bal.thinnest.label)}` : '아직 완독 없음'}</div>
+        </div>
+      </div>
+
       <div class="stat-grid" style="margin-bottom:12px">
         <div class="stat"><div class="stat__v mono">${doneY.length}<small>권</small></div><div class="stat__k">완독</div></div>
-        <div class="stat"><div class="stat__v mono">${nfmt(pagesFromBooks || pagesFromSessions)}<small>쪽</small></div><div class="stat__k">읽은 분량</div></div>
+        <div class="stat"><div class="stat__v mono">${nfmt(pagesFromBooks || pagesFromSessions)}<small>쪽</small></div><div class="stat__k">${Y}년 읽은 분량</div></div>
         <div class="stat"><div class="stat__v mono">${minutesY >= 60 ? (minutesY / 60).toFixed(1) : minutesY}<small>${minutesY >= 60 ? '시간' : '분'}</small></div><div class="stat__k">독서 시간</div></div>
         <div class="stat"><div class="stat__v mono">${avgRating ? avgRating.toFixed(1) : '—'}<small>★</small></div><div class="stat__k">평균 별점</div></div>
       </div>
@@ -106,6 +126,24 @@ export default function statsView() {
         <div class="stat"><div class="stat__v mono">${notesY.length}<small>개</small></div><div class="stat__k">남긴 기록</div></div>
         <div class="stat"><div class="stat__v mono">${avgSpan ?? '—'}<small>일</small></div><div class="stat__k">한 권 평균 기간</div></div>
       </div>
+
+      <section class="section">
+        <div class="section__head"><h2>부문 분포</h2><span class="muted tiny">${Y}년 완독 기준</span></div>
+        <div class="card" style="padding:18px;display:flex;gap:20px;align-items:center;flex-wrap:wrap;justify-content:center">
+          ${balY.total
+            ? `${radarChart(balY.rows)}
+               <div style="flex:1;min-width:180px">
+                 <p class="tiny muted" style="line-height:1.7">
+                   ${Y}년에 <b>${balY.total}권</b>을 끝냈고, 그중
+                   <b>${esc(balY.rows.reduce((a, r) => (r.value > a.value ? r : a), balY.rows[0]).label)}</b>이(가) 가장 많아요.
+                   ${balY.thinnest && !balY.thinnest.value
+                     ? `<b>${esc(balY.thinnest.label)}</b> 쪽은 아직 비어 있습니다.` : ''}
+                 </p>
+                 ${balY.other ? `<p class="tiny faint" style="margin-top:8px">분류가 없어 어느 쪽에도 못 넣은 책 ${balY.other}권</p>` : ''}
+               </div>`
+            : '<p class="empty" style="width:100%">완독한 책이 쌓이면 어느 쪽으로 치우쳐 읽는지 보여드릴게요.</p>'}
+        </div>
+      </section>
 
       <section class="section">
         <div class="section__head"><h2>월별 완독</h2><span class="muted tiny">${Y}년</span></div>

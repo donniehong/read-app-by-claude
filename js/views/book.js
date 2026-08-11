@@ -25,6 +25,7 @@ export default function bookView({ id }) {
     || String(a.createdAt).localeCompare(String(b2.createdAt)));
   const sessions = store.sessionsOf(id).sort((a, b2) => String(b2.startedAt).localeCompare(String(a.startedAt)));
   const pct = store.progressOf(b);
+  const accNo = store.accessionNo(b);   // 완독한 책만 번호를 받는다
   const f = store.forecast(b);
   const totalMin = sum(sessions, (s) => s.minutes);
   const running = timer.isRunning(id);
@@ -53,6 +54,7 @@ export default function bookView({ id }) {
         <div class="bookhead__info">
           <span class="badge badge--${esc(b.status)}">${esc(store.STATUS[b.status])}</span>
           ${b.readCount > 1 ? `<span class="badge badge--want">${b.readCount}회독</span>` : ''}
+          ${accNo ? `<div class="accession mono">No. ${accNo}</div>` : ''}
           <h1 class="bookhead__title" style="margin-top:8px">${esc(b.title)}</h1>
           <p class="bookhead__authors">${esc((b.authors || []).join(', '))}${b.publisher ? ` · ${esc(b.publisher)}` : ''}</p>
 

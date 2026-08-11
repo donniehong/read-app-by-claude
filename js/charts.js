@@ -45,6 +45,58 @@ export function rankList(rows, { valueFmt = (v) => v, max: maxN = 6 } = {}) {
     </div>`).join('');
 }
 
+/**
+ * 부문 분포 레이더 — 어느 쪽으로 치우쳐 읽었는지 모양으로 보여 준다
+ * @param {{label:string, value:number}[]} rows  축은 항상 같은 순서로 들어와야 한다
+ */
+export function radarChart(rows, { size = 230 } = {}) {
+  const n = rows.length;
+  if (n < 3) return '<p class="empty">데이터가 없어요.</p>';
+
+  const max = Math.max(1, ...rows.map((r) => r.value));
+  const cx = 50, cy = 50, R = 34;
+  // 12시 방향에서 시계 방향으로
+  const at = (i, r) => {
+    const a = (Math.PI * 2 * i) / n - Math.PI / 2;
+    return [cx + Math.cos(a) * r, cy + Math.sin(a) * r];
+  };
+  const poly = (r, i2r) => rows
+    .map((_, i) => at(i, i2r ? i2r(i) : r).map((v) => v.toFixed(2)).join(','))
+    .join(' ');
+
+  // 배경 그물 (4겹)
+  const web = [0.25, 0.5, 0.75, 1].map((f) => `
+    <polygon points="${poly(R * f)}" fill="none" stroke="var(--line)" stroke-width="0.5"/>`).join('');
+  const spokes = rows.map((_, i) => {
+    const [x, y] = at(i, R);
+    return `<line x1="${cx}" y1="${cy}" x2="${x.toFixed(2)}" y2="${y.toFixed(2)}"
+      stroke="var(--line)" stroke-width="0.5"/>`;
+  }).join('');
+
+  const shape = poly(0, (i) => (rows[i].value / max) * R);
+  const dots = rows.map((r, i) => {
+    const [x, y] = at(i, (r.value / max) * R);
+    return `<circle cx="${x.toFixed(2)}" cy="${y.toFixed(2)}" r="1.6" fill="var(--accent)"/>`;
+  }).join('');
+
+  const labels = rows.map((r, i) => {
+    const [x, y] = at(i, R + 11);
+    const anchor = Math.abs(x - cx) < 4 ? 'middle' : (x > cx ? 'start' : 'end');
+    return `<text x="${x.toFixed(1)}" y="${(y + 1.6).toFixed(1)}" text-anchor="${anchor}"
+      style="font-size:4.6px;font-weight:700;fill:var(--text-dim)">${esc(r.label)}</text>
+      <text x="${x.toFixed(1)}" y="${(y + 6.4).toFixed(1)}" text-anchor="${anchor}"
+      style="font-size:4.2px;font-weight:800;fill:var(--text-faint)">${r.value}</text>`;
+  }).join('');
+
+  return `
+    <svg viewBox="0 0 100 100" style="width:${size}px;max-width:100%;height:auto;overflow:visible">
+      ${web}${spokes}
+      <polygon points="${shape}" fill="var(--accent)" fill-opacity="0.22"
+        stroke="var(--accent)" stroke-width="1.2" stroke-linejoin="round"/>
+      ${dots}${labels}
+    </svg>`;
+}
+
 const DONUT_COLORS = ['#5c9c5c', '#dfa63c', '#c96f5a', '#5b8fb9', '#3fa3a3', '#9c7fb8', '#8a9a7b', '#d08bb0'];
 
 /** 도넛 차트 + 범례 */

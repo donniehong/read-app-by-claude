@@ -464,7 +464,11 @@ export function openFinishDialog(book) {
         }
 
         close();
-        toast(actions.length ? `완독! 실천 ${actions.length}개를 등록했어요 🎉` : '완독을 축하해요 🎉');
+        // 권수보다 '몇 번째'가 남는다
+        const no = store.accessionNo(store.getBook(book.id));
+        toast(no
+          ? `${no}번째 책을 등록했어요 · No.${no} 🎉`
+          : (actions.length ? `완독! 실천 ${actions.length}개를 등록했어요 🎉` : '완독을 축하해요 🎉'));
       };
     },
   });

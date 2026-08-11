@@ -473,6 +473,80 @@ export function streak() {
   return { current: cur, best };
 }
 
+/* ---------- 자랑거리가 되는 단위 세 가지 ---------- */
+// 등록번호 · 킬로페이지 · 부문 분포.
+// 권수는 남과 비교하기 어렵지만, 이 셋은 내 서재가 쌓여 가는 모양을 보여 준다.
+
+/** 완독한 순서대로 줄 세운 목록. 번호는 여기서 나온다. */
+function accessionOrder() {
+  return state.books
+    .filter((b) => b.status === 'done' && b.finishedAt)
+    // 같은 날 두 권을 끝냈으면 서재에 담은 순서로 가른다 — 기기가 달라도 같은 답이 나와야 한다
+    .sort((a, b) => (a.finishedAt !== b.finishedAt
+      ? (a.finishedAt < b.finishedAt ? -1 : 1)
+      : String(a.addedAt || a.id) < String(b.addedAt || b.id) ? -1 : 1));
+}
+
+/**
+ * 이 책이 내 서재의 몇 번째 완독인지. 아직 안 끝냈으면 null.
+ * 번호를 따로 저장하지 않고 매번 센다 — 기기 두 대가 같은 번호를 각자 발급하는 일을 막는다.
+ */
+export function accessionNo(book) {
+  if (!book || book.status !== 'done' || !book.finishedAt) return null;
+  const i = accessionOrder().findIndex((b) => b.id === book.id);
+  return i < 0 ? null : i + 1;
+}
+export const accessionTotal = () => accessionOrder().length;
+
+/** 지금까지 읽은 쪽수 — 완독한 책은 전부, 읽는 중인 책은 지금 쪽까지 */
+export function totalPages() {
+  return sum(state.books, (b) => (
+    b.status === 'done' ? (b.pageCount || b.currentPage || 0) : (b.currentPage || 0)
+  ));
+}
+/** 1,000쪽을 1kp 로 센다 */
+export const kilopages = () => totalPages() / 1000;
+
+/** 레이더로 그릴 부문 — 축이 고정돼야 모양을 견줄 수 있다 */
+export const GENRES = [
+  { key: 'lit',  label: '문학',      kw: ['소설', '시', '희곡', '문학', '고전', '판타지', '추리', '스릴러', 'sf', '로맨스'] },
+  { key: 'hum',  label: '인문·사회', kw: ['인문', '철학', '심리', '사회', '정치', '경제', '경영', '교육', '종교'] },
+  { key: 'sci',  label: '과학·기술', kw: ['과학', '수학', '기술', '공학', '컴퓨터', 'it', '의학', '자연'] },
+  { key: 'life', label: '실용·자기계발', kw: ['자기계발', '실용', '건강', '요리', '취미', '여행', '재테크', '투자'] },
+  { key: 'art',  label: '예술·문화', kw: ['예술', '미술', '음악', '사진', '디자인', '건축', '영화', '만화', '문화'] },
+  { key: 'hist', label: '역사',      kw: ['역사', '전기', '평전', '고고'] },
+];
+
+/** 책의 분류 글자를 여섯 부문 중 하나로 접는다. 아무 데도 안 걸리면 null. */
+export function genreOf(book) {
+  const text = [...(book.categories || []), ...(book.tags || [])].join(' ').toLowerCase();
+  if (!text.trim()) return null;
+  for (const g of GENRES) {
+    if (g.kw.some((k) => text.includes(k))) return g.key;
+  }
+  return null;
+}
+
+/**
+ * 부문별 완독 권수. year 를 주면 그 해만.
+ * @returns {{rows: {key,label,value}[], other: number, total: number, thinnest: object|null}}
+ */
+export function genreBalance({ year = null } = {}) {
+  const counts = Object.fromEntries(GENRES.map((g) => [g.key, 0]));
+  let other = 0;
+  for (const b of state.books) {
+    if (b.status !== 'done' || !b.finishedAt) continue;
+    if (year && Number(b.finishedAt.slice(0, 4)) !== Number(year)) continue;
+    const k = genreOf(b);
+    if (k) counts[k] += 1; else other += 1;
+  }
+  const rows = GENRES.map((g) => ({ key: g.key, label: g.label, value: counts[g.key] }));
+  const total = sum(rows, (r) => r.value) + other;
+  // 가장 얇은 쪽을 짚어 주면 다음에 무엇을 집을지 정하기 쉬워진다
+  const thinnest = total ? rows.reduce((a, r) => (r.value < a.value ? r : a), rows[0]) : null;
+  return { rows, other, total, thinnest };
+}
+
 /* ---------- 입수 경로 집계 ---------- */
 
 /** 날짜가 비어 있으면 서재에 담은 날을 대신 쓴다 */
