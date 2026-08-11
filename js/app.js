@@ -132,6 +132,7 @@ function wireChrome() {
       3: () => go('#/timeline'),
       4: () => go('#/notes'),
       5: () => go('#/stats'),
+      6: () => go('#/settings'),
     };
     const fn = map[e.key.toLowerCase()];
     if (fn) { e.preventDefault(); fn(); }

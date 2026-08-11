@@ -112,7 +112,7 @@ export default function settingsView() {
         <div class="section__head"><h2>단축키 (PC)</h2></div>
         <div class="card" style="padding:8px 16px">
           ${[['/', '검색창으로 이동'], ['N', '책 추가'], ['Q', '문장 기록'],
-             ['T', '테마 전환'], ['1~5', '탭 이동'], ['Esc', '창 닫기']].map(([k, v]) => `
+             ['T', '테마 전환'], ['1~5', '탭 이동'], ['6', '설정'], ['Esc', '창 닫기']].map(([k, v]) => `
             <div style="display:flex;gap:12px;padding:9px 0;border-bottom:1px solid var(--line-soft);font-size:13.5px">
               <kbd style="background:var(--bg-sunk);border-radius:6px;padding:1px 8px;font-family:var(--font);font-weight:700;min-width:44px;text-align:center">${esc(k)}</kbd>
               <span class="muted">${esc(v)}</span>

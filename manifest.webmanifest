@@ -6,8 +6,8 @@
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait-primary",
-  "background_color": "#f7f4ee",
-  "theme_color": "#a4552f",
+  "background_color": "#f1f5f2",
+  "theme_color": "#4a7c64",
   "lang": "ko",
   "categories": ["books", "productivity", "lifestyle"],
   "icons": [

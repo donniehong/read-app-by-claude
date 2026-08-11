@@ -3,36 +3,41 @@
    디자인 방향: 밝고 둥근 큰 카드(모바일 앱) + 상단 지표 줄(대시보드)
    ============================================================ */
 
+/* 색: 도서관 램프갓 같은 세이지 그린.
+   채도를 낮춰 은은하게 두되, 글자를 얹는 --accent 는 흰 글씨가 읽힐 만큼은 어둡게 잡았다. */
 :root {
-  --bg:          #f4f3f9;
+  --bg:          #f1f5f2;
   --bg-elev:     #ffffff;
-  --bg-sunk:     #eeecf7;
-  --line:        #e5e2f2;
-  --line-soft:   #f0eef8;
-  --text:        #171528;
-  --text-dim:    #6b6885;
-  --text-faint:  #a09dba;
+  --bg-sunk:     #e7eee9;
+  --line:        #dde8e1;
+  --line-soft:   #edf3ef;
+  --text:        #1a241f;
+  --text-dim:    #5d6e65;
+  --text-faint:  #94a69b;
 
-  --accent:      #5b52ff;
-  --accent-2:    #9b6bff;
-  --accent-soft: #eceafe;
+  --accent:      #4a7c64;
+  --accent-2:    #7fae95;
+  --accent-soft: #e6f0ea;
   --accent-ink:  #ffffff;
 
-  --ok:          #0fae8c;
-  --ok-soft:     #e0f8f2;
-  --warn:        #e39100;
-  --warn-soft:   #fff3dc;
-  --danger:      #e5503f;
-  --danger-soft: #ffeae7;
-  --star:        #ffb020;
+  /* 완독(ok)은 accent 와 같은 초록 가족이라, 조금 더 청록 쪽으로 밀어 구분한다 */
+  --ok:          #2f9e8b;
+  --ok-soft:     #e0f4ef;
+  --warn:        #c8891f;
+  --warn-soft:   #fbf1dc;
+  --danger:      #c65a4c;
+  --danger-soft: #fbe9e6;
+  --star:        #dfa63c;
+  --lend:        #47799f;   /* 빌린 책 — 구매(초록)와 갈리도록 */
+  --lend-soft:   #e6eff7;
 
   --radius:      24px;
   --radius-sm:   18px;
   --radius-xs:   14px;
 
-  --shadow:      0 4px 20px rgba(30, 20, 90, .07);
-  --shadow-sm:   0 2px 10px rgba(30, 20, 90, .05);
-  --shadow-lg:   0 10px 30px rgba(30, 20, 90, .16);
+  --shadow:      0 4px 20px rgba(24, 48, 38, .07);
+  --shadow-sm:   0 2px 10px rgba(24, 48, 38, .05);
+  --shadow-lg:   0 10px 30px rgba(24, 48, 38, .16);
 
   --topbar-h:    60px;
   --tabs-h:      86px;
@@ -44,27 +49,29 @@
 }
 
 html[data-theme="dark"] {
-  --bg:          #111020;
-  --bg-elev:     #1b1a2b;
-  --bg-sunk:     #262437;
-  --line:        #322f47;
-  --line-soft:   #262437;
-  --text:        #eeecf7;
-  --text-dim:    #a9a4c6;
-  --text-faint:  #76719c;
+  --bg:          #121815;
+  --bg-elev:     #1b231e;
+  --bg-sunk:     #253029;
+  --line:        #32403a;
+  --line-soft:   #253029;
+  --text:        #e8f0ea;
+  --text-dim:    #a2b3a8;
+  --text-faint:  #71857a;
 
-  --accent:      #8b84ff;
-  --accent-2:    #b38bff;
-  --accent-soft: #2b2748;
-  --accent-ink:  #100f1c;
+  --accent:      #7fb499;
+  --accent-2:    #a6cfb7;
+  --accent-soft: #23342b;
+  --accent-ink:  #0f1712;
 
-  --ok:          #3ad9b4;
-  --ok-soft:     #14332e;
-  --warn:        #f0b53f;
-  --warn-soft:   #362a12;
-  --danger:      #ff8073;
-  --danger-soft: #3a1f1d;
-  --star:        #f0b53f;
+  --ok:          #4ecab1;
+  --ok-soft:     #143330;
+  --warn:        #e0b055;
+  --warn-soft:   #352c14;
+  --danger:      #f08a7c;
+  --danger-soft: #38201d;
+  --star:        #e0b055;
+  --lend:        #7fb1d6;
+  --lend-soft:   #1d2b36;
 
   --shadow:      0 4px 20px rgba(0, 0, 0, .38);
   --shadow-sm:   0 2px 10px rgba(0, 0, 0, .3);
@@ -110,7 +117,8 @@ input[type="search"]::-webkit-search-cancel-button { -webkit-appearance: none; }
   font-weight: 800; font-size: 17px; letter-spacing: -.035em; color: var(--text);
 }
 .brand-mark { width: 20px; height: 20px; fill: var(--accent); }
-.topbar__search { flex: 1 1 auto; max-width: 420px; }
+/* min-width:0 이 없으면 input 의 기본 너비가 최소값으로 잡혀 좁은 화면에서 상단바가 넘친다 */
+.topbar__search { flex: 1 1 auto; max-width: 420px; min-width: 0; }
 .topbar__search input {
   width: 100%; height: 40px; padding: 0 16px;
   background: var(--bg-elev); border: 1px solid transparent; border-radius: 999px;
@@ -123,6 +131,8 @@ input[type="search"]::-webkit-search-cancel-button { -webkit-appearance: none; }
   box-shadow: 0 0 0 4px var(--accent-soft);
 }
 .topbar__actions { display: flex; gap: 8px; flex: 0 0 auto; margin-left: auto; }
+/* 지금 설정 화면에 있다는 표시 */
+.topbar__actions .is-active { background: var(--accent); color: var(--accent-ink); }
 
 .view {
   padding: calc(var(--topbar-h) + 16px) 16px calc(var(--tabs-h) + env(safe-area-inset-bottom));
@@ -235,6 +245,8 @@ input[type="search"]::-webkit-search-cancel-button { -webkit-appearance: none; }
 .badge--want    { background: var(--bg-sunk); color: var(--text-dim); }
 .badge--paused  { background: var(--warn-soft); color: var(--warn); }
 .badge--dropped { background: var(--danger-soft); color: var(--danger); }
+.badge--buy     { background: var(--accent-soft); color: var(--accent); }
+.badge--lend    { background: var(--lend-soft); color: var(--lend); }
 
 .progress { height: 10px; border-radius: 10px; background: var(--bg-sunk); overflow: hidden; position: relative; }
 .progress > i {
@@ -298,9 +310,14 @@ input[type="search"]::-webkit-search-cancel-button { -webkit-appearance: none; }
 @media (min-width: 900px) { .grid2 { grid-template-columns: 1.25fr 1fr; gap: 24px; align-items: start; } }
 
 .hero {
-  background: linear-gradient(135deg, #5b52ff, #8a6bff 60%, #a86bff);
+  /* 흰 글씨를 얹으므로 밝은 끝도 너무 밝게 두지 않는다 */
+  background: linear-gradient(135deg, #33675a, #47795f 55%, #5f9a7e);
   border-radius: 28px; padding: 22px; color: #fff; margin-bottom: 14px;
   position: relative; overflow: hidden;
+}
+/* 밤에는 한 단 더 가라앉힌다 — 어두운 화면에서 이 카드만 뜨면 눈이 아프다 */
+html[data-theme="dark"] .hero {
+  background: linear-gradient(135deg, #1c4638, #275445 55%, #3a7160);
 }
 .hero::after {
   content: ""; position: absolute; right: -40px; top: -50px; width: 190px; height: 190px;
@@ -616,8 +633,10 @@ input[type="search"]::-webkit-search-cancel-button { -webkit-appearance: none; }
 .acq-cell__k { font-size: 12px; color: var(--text-faint); font-weight: 700; margin-top: 2px; }
 .acq-bar { display: flex; height: 12px; border-radius: 12px; overflow: hidden; background: var(--bg-sunk); }
 .acq-bar > i { display: block; height: 100%; }
+/* 테마가 초록이라 구매(초록)와 대출을 같은 초록 가족으로 두면 한눈에 갈리지 않는다.
+   빌린 책은 차분한 파랑으로 따로 뺀다. */
 .acq-bar > i.buy { background: var(--accent); }
-.acq-bar > i.lend { background: var(--ok); }
+.acq-bar > i.lend { background: var(--lend); }
 
 /* ---------- 반납 임박 알림 ---------- */
 .duebar {

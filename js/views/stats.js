@@ -195,7 +195,7 @@ export default function statsView() {
             ${acq.places.slice(0, 8).map((r, i) => `
               <div class="rank-row">
                 <span class="n">${i + 1}</span>
-                <span class="badge badge--${r.type === 'purchase' ? 'want' : 'reading'}"
+                <span class="badge badge--${r.type === 'purchase' ? 'buy' : 'lend'}"
                       style="flex:0 0 auto">${r.type === 'purchase' ? '구매' : '대출'}</span>
                 <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.place)}</span>
                 <span class="v">${r.value}권</span>
