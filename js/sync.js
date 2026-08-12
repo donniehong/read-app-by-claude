@@ -346,6 +346,32 @@ export async function syncNow() {
   return result;
 }
 
+/**
+ * 넣으면 안 되는 키인지 알아본다.
+ * Secret · service_role 키는 모든 잠금을 무시하므로, 브라우저에 들어가면
+ * 주소를 아는 누구나 내 기록을 읽고 지울 수 있다. 실수 한 번에 프로젝트가 열린다.
+ * @returns {string} 문제가 있으면 사람이 읽을 메시지, 없으면 빈 문자열
+ */
+export function keyProblem(key) {
+  const k = String(key || '').trim();
+  if (/^sb_secret_/i.test(k)) {
+    return '비밀 키(sb_secret_…)를 넣으셨습니다. 이 키는 모든 잠금을 무시하니 브라우저에 넣으면 안 됩니다. '
+      + '공개 키(Publishable 또는 anon)를 넣어 주세요.';
+  }
+  // 예전 방식의 키는 JWT 라서 역할이 안에 적혀 있다
+  const m = /^eyJ[\w-]*\.([\w-]+)\./.exec(k);
+  if (m) {
+    try {
+      const body = JSON.parse(atob(m[1].replace(/-/g, '+').replace(/_/g, '/')));
+      if (body.role && body.role !== 'anon') {
+        return `${body.role} 키를 넣으셨습니다. 이 키는 모든 잠금을 무시하니 브라우저에 넣으면 안 됩니다. `
+          + 'anon(public) 키를 넣어 주세요.';
+      }
+    } catch { /* 우리가 못 읽는 형식이면 판단하지 않는다 */ }
+  }
+  return '';
+}
+
 /** 설정을 저장하기 전에 주소와 키가 맞는지만 두들겨 본다 */
 export async function testConnection({ url, anonKey }) {
   const u = trimUrl(url);
@@ -356,6 +382,8 @@ export async function testConnection({ url, anonKey }) {
   if (!local && !/^https:\/\//.test(u)) {
     throw new Error('프로젝트 주소는 https:// 로 시작해야 합니다.');
   }
+  const bad = keyProblem(anonKey);
+  if (bad) throw new Error(bad);
   let res;
   try {
     res = await fetch(`${u}/auth/v1/settings`, { headers: { apikey: anonKey } });

@@ -131,8 +131,13 @@ export default function settingsView() {
      '기록을 담을 표와 사진 보관함을 만들고, 남이 내 기록을 못 보게 잠그는 작업입니다. 한 번만 하면 돼요.'],
     ['<b>Authentication → Sign In / Providers → Email</b> 에서 <b>Confirm email</b> 을 꺼 주세요.',
      '끄지 않으면 계정을 만든 뒤 메일함의 확인 링크를 눌러야 로그인됩니다. 어느 쪽이든 괜찮아요.'],
-    ['<b>Project Settings → API</b> 에서 <b>Project URL</b> 과 <b>anon public</b> 키를 복사해 이 화면에 붙여넣으세요.',
-     'anon 키는 원래 공개되는 키입니다. 실제 잠금은 위 SQL 의 규칙이 하고, 로그인한 본인 기록만 열립니다. <b>service_role</b> 키는 절대 넣지 마세요.'],
+    ['톱니바퀴(<b>Project Settings</b>) → <b>API Keys</b> 에서 <b>Publishable key</b>(sb_publishable_…) 를 복사해 아래에 붙여넣으세요.',
+     '기본으로 열리는 <b>Publishable and secret API keys</b> 탭의 <b>default</b> 줄입니다. '
+     + '<b>Secret keys</b>(sb_secret_…), <b>JWT Keys</b> 메뉴, <b>service_role</b> 은 넣으면 안 됩니다 — 넣으시면 앱이 막아 드려요. '
+     + '예전 방식인 <b>Legacy anon</b>(eyJ…) 탭의 키를 쓰셔도 동작합니다.'],
+    ['프로젝트 주소는 <b>General</b> 의 <b>Project ID</b> 앞뒤를 붙여 만드시면 가장 확실합니다.',
+     '<code>https://&lt;Project ID&gt;.supabase.co</code> 형태입니다. '
+     + '<b>INTEGRATIONS → Data API</b> 페이지의 <b>Project URL</b> 을 그대로 복사하셔도 같습니다.'],
   ];
 
   function openSyncHelp() {
@@ -178,7 +183,7 @@ export default function settingsView() {
         </p>
         <div style="display:flex;flex-direction:column;gap:12px">
           ${fieldHTML('프로젝트 주소', '<input class="input" id="syUrl" placeholder="https://xxxxxxxx.supabase.co" autocomplete="off">')}
-          ${fieldHTML('anon public 키', '<input class="input" id="syKey" placeholder="eyJ... 로 시작하는 긴 문자열" autocomplete="off">')}
+          ${fieldHTML('공개 키 (Publishable 또는 anon)', '<input class="input" id="syKey" placeholder="sb_publishable_... 또는 eyJ... 로 시작하는 키" autocomplete="off">')}
         </div>
         <div class="chips" style="margin-top:14px">
           <button class="btn btn--primary btn--sm" id="syCheck" type="button">연결 확인</button>
