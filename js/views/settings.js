@@ -201,7 +201,7 @@ export default function settingsView() {
         try {
           await sync.testConnection({ url, anonKey });
           await store.saveSyncState({ url: url.replace(/\/+$/, ''), anonKey });
-          toast('프로젝트에 연결됐어요. 이제 로그인해 주세요.');
+          toast('창고를 찾았어요. 이제 이 창고에서 쓸 계정을 만들면 됩니다.');
           renderSync();
         } catch (err) {
           btn.disabled = false;
@@ -214,19 +214,21 @@ export default function settingsView() {
     if (!st2.signedIn) {
       const host = s.url.replace(/^https?:\/\//, '');
       syncBox.innerHTML = `
-        <p class="tiny faint" style="margin-bottom:14px">창고: ${esc(host)}</p>
+        <p class="tiny muted" style="margin-bottom:14px">
+          <b>${esc(host)}</b> 창고를 쓸 <b>계정을 만드세요.</b>
+          Supabase 홈페이지 계정이 아니라, <b>내 창고 안에서만 쓰는 계정</b>이에요.
+          이메일과 비밀번호는 새로 정하시면 됩니다 (Supabase 로그인과 같아도 괜찮아요).
+          휴대폰에서는 <b>같은 이메일·비밀번호로 로그인</b>하면 이 기기의 기록이 그대로 따라갑니다.
+        </p>
         <div style="display:flex;flex-direction:column;gap:12px">
           ${fieldHTML('이메일', `<input class="input" id="syEmail" type="email" value="${esc(s.email)}" autocomplete="username">`)}
           ${fieldHTML('비밀번호', '<input class="input" id="syPw" type="password" autocomplete="current-password">')}
         </div>
         <div class="chips" style="margin-top:14px">
-          <button class="btn btn--primary btn--sm" id="syIn" type="button">로그인</button>
-          <button class="btn btn--sm" id="syUp" type="button">계정 만들기</button>
+          <button class="btn btn--primary btn--sm" id="syUp" type="button">계정 만들기 (처음이면 이쪽)</button>
+          <button class="btn btn--sm" id="syIn" type="button">로그인 (다른 기기에서 이미 만들었다면)</button>
           <button class="btn btn--sm btn--ghost" id="syForget" type="button">주소·키 다시 넣기</button>
         </div>
-        <p class="tiny faint" style="margin-top:10px">
-          이 계정은 내 Supabase 프로젝트에만 있는 계정이에요. 다른 기기에서도 같은 이메일로 로그인하면 기록이 합쳐집니다.
-        </p>
         <div id="syOut"></div>`;
 
       const go2 = async (mode, btn) => {

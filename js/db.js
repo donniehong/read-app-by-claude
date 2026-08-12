@@ -11,6 +11,11 @@ const STORES  = ['books', 'notes', 'sessions', 'meta', 'images', 'graves'];
 let dbp = null;
 let fallback = false;
 
+/** 저장소에 문제가 생겼을 때 사람에게 알릴 통로 */
+let trouble = null;
+export function onTrouble(fn) { trouble = fn; }
+const warn = (msg) => { console.warn('[db]', msg); trouble?.(msg); };
+
 function openDB() {
   if (dbp) return dbp;
   dbp = new Promise((resolve, reject) => {
@@ -29,11 +34,26 @@ function openDB() {
         }
       }
     };
-    req.onsuccess = () => resolve(req.result);
+    req.onsuccess = () => {
+      // 다른 탭이 더 새 버전으로 열리면 이 연결을 놓아 줘야 그쪽이 갱신할 수 있다
+      req.result.onversionchange = () => {
+        req.result.close();
+        dbp = null;
+        warn('앱이 새 버전으로 바뀌었어요. 이 탭을 새로고침해 주세요.');
+      };
+      resolve(req.result);
+    };
     req.onerror = () => reject(req.error);
-    req.onblocked = () => reject(new Error('blocked'));
+    // 다른 탭이 옛 버전을 붙들고 있으면 갱신이 막힌다.
+    // 여기서 포기하고 localStorage 로 갈아타면 서재가 텅 빈 것처럼 보인다 —
+    // 기록은 IndexedDB 에 멀쩡히 있는데 엉뚱한 곳을 들여다보는 셈이다.
+    // 그래서 기다린다. 저쪽 탭이 닫히는 순간 onsuccess 로 이어진다.
+    req.onblocked = () => warn(
+      '이 앱이 열린 다른 탭이 있어 저장소를 준비하지 못하고 있어요. '
+      + '다른 탭을 닫으면 이어서 진행됩니다.',
+    );
   }).catch((e) => {
-    console.warn('[db] IndexedDB 사용 불가 → localStorage 폴백', e);
+    warn(`이 브라우저에서 IndexedDB 를 쓸 수 없어 임시 저장소로 넘어갑니다 (${e?.name || e}).`);
     fallback = true;
     return null;
   });
