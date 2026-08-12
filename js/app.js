@@ -2,6 +2,7 @@
 
 import { $, $$, on, debounce } from './util.js';
 import * as store from './store.js';
+import { onTrouble } from './db.js';
 import { applyTheme, nextMode, cacheTheme } from './theme.js';
 import { route, match, start, go, currentPathname, setCurrent } from './router.js';
 import { toast, modalOpen, hydrateImages } from './ui.js';
@@ -142,6 +143,16 @@ function wireChrome() {
 /* ---------- 시작 ---------- */
 (async function main() {
   wireChrome();
+
+  // 저장소가 준비되지 않으면 화면은 비어 보인다. 그걸 '기록이 사라졌다'로 오해하지 않도록 알린다.
+  onTrouble((msg) => {
+    toast(msg, 8000);
+    const v = $('#view');
+    if (v && !v.children.length) {
+      v.innerHTML = `<div class="empty"><strong>잠시만요</strong>${msg}</div>`;
+    }
+  });
+
   await store.load();
   applyTheme(store.settings().theme);
   cacheTheme(store.settings().theme);
