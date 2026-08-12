@@ -1,6 +1,6 @@
 // 서비스 워커 — 앱 셸 캐시로 오프라인 지원
 
-const CACHE = 'chaekgalpi-v3';
+const CACHE = 'chaekgalpi-v4';
 
 const SHELL = [
   './',
@@ -76,19 +76,21 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
-  // 앱 셸은 캐시 우선 + 백그라운드 갱신
+  // 앱 셸은 네트워크 우선, 안 되면 캐시.
+  //
+  // 캐시를 먼저 주면 배포 직후에 옛 파일과 새 파일이 섞일 수 있다.
+  // 이 앱은 ES 모듈이라 한쪽에만 있는 함수를 부르는 순간 화면 전체가 죽는다
+  // (제목줄만 남고 아래가 백지가 된다). 그래서 온라인일 때는 늘 새것을 받는다.
+  // 오프라인이면 캐시로 떨어지고, 그때는 캐시 안의 것끼리 짝이 맞는다.
   e.respondWith(
-    caches.match(req).then((cached) => {
-      const network = fetch(req)
-        .then((res) => {
-          if (res.ok) {
-            const copy = res.clone();
-            caches.open(CACHE).then((c) => c.put(req, copy));
-          }
-          return res;
-        })
-        .catch(() => cached || caches.match('./index.html'));
-      return cached || network;
-    }),
+    fetch(req)
+      .then((res) => {
+        if (res.ok) {
+          const copy = res.clone();
+          caches.open(CACHE).then((c) => c.put(req, copy));
+        }
+        return res;
+      })
+      .catch(() => caches.match(req).then((cached) => cached || caches.match('./index.html'))),
   );
 });
